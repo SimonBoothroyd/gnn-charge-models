@@ -1,0 +1,48 @@
+name: gnn-charge-models
+
+channels:
+  - psi4
+  - conda-forge
+  - defaults
+  - dglteam
+  - openeye
+  - simonboothroyd
+
+dependencies:
+
+  - python
+  - pip
+
+    # GNN models
+  - nagl >=0.0.2
+  - dgl
+  - dgl-cuda11.0  # gpu training
+
+    # Model training
+  - pytorch
+  - pytorch-lightning
+# - pytorch =*=cuda
+  - cudatoolkit =11.0  # gpu training
+
+    # Molecule loading, processing and labelling.
+  - openff-toolkit-base >=0.9.1
+  - openff-recharge >=0.0.2  # esp / electric field
+  - openeye-toolkits
+  - rdkit
+  - psi4 >=1.4
+  - geometric
+  - qcengine
+  - msgpack-python  # needed for qcengine
+
+    # SQL based molecule storage.
+  - sqlalchemy
+  - sqlite
+
+    # Distributed molecule processing / labelling.
+  - distributed
+  - dask-jobqueue
+
+  # Common dependencies
+  - tqdm
+  - seaborn
+  - splore
