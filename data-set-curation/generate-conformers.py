@@ -2,7 +2,7 @@ import json
 import os.path
 import pickle
 import traceback
-from typing import Set, Tuple
+from typing import List, Set, Tuple
 
 import click
 import mdtraj
@@ -77,7 +77,11 @@ def _validate_optimization(
 
 
 def _generate_conformers(
-    smiles: str, n_conformers: int, n_processes: int, memory: int
+    smiles: str,
+    n_conformers: int,
+    qc_settings: List[Tuple[str, str, str]],
+    n_processes: int,
+    memory: int,
 ) -> unit.Quantity:
 
     toolkit_registry = ToolkitRegistry([OpenEyeToolkitWrapper()])
@@ -119,11 +123,12 @@ def _generate_conformers(
 
         current_molecule = initial_molecule
 
-        # 2. minimize the conformer using HF/6-31G*
-        for method, basis in [("hf", "6-31G*")]:
+        # 2. minimize the conformer using the requested QC settings.
+        for program, method, basis in qc_settings:
+
             optimization_input = OptimizationInput(
                 keywords={
-                    "program": "psi4",
+                    "program": program,
                     "coordsys": "dlc",
                     "convergence_set": "GAU_LOOSE",
                     "maxiter": 300,
@@ -187,6 +192,14 @@ def _generate_conformers(
     show_default=True,
 )
 @click.option(
+    "--qc-settings",
+    help="Settings that describe the program, method, and basis to use when minimizing "
+    "each conformer.",
+    type=(str, str, str),
+    default=("psi4", "hf", "6-31G*"),
+    show_default=True,
+)
+@click.option(
     "--batch-size",
     type=int,
     default=128,
@@ -211,22 +224,25 @@ def _generate_conformers(
 @click.option(
     "--memory",
     type=int,
-    default=4.5,
+    default=256,
     help="The maximum memery available to psi4 in GiB.",
     show_default=True,
 )
 def main(
-    input_path,
-    output_directory,
-    n_conformers,
-    batch_size,
-    batch_index,
-    n_processes,
-    memory,
+    input_path: str,
+    output_directory: str,
+    n_conformers: int,
+    qc_settings: Tuple[str, str, str],
+    batch_size: int,
+    batch_index: int,
+    n_processes: int,
+    memory: int,
 ):
 
     smiles_list = [*stream_from_file(input_path, as_smiles=True)]
     smiles_list = smiles_list[batch_index * batch_size : (batch_index + 1) * batch_size]
+
+    qc_settings = [qc_settings]
 
     completed, failed = [], []
 
@@ -249,7 +265,7 @@ def main(
 
             try:
                 conformers = _generate_conformers(
-                    smiles, n_conformers, n_processes, memory
+                    smiles, n_conformers, qc_settings, n_processes, memory
                 )
                 completed.append((smiles, conformers))
             except BaseException as e:

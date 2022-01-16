@@ -33,6 +33,7 @@ dependencies:
   - geometric
   - qcengine
   - msgpack-python  # needed for qcengine
+  - xtb-python
 
     # SQL based molecule storage.
   - sqlalchemy
@@ -46,3 +47,6 @@ dependencies:
   - tqdm
   - seaborn
   - splore
+
+  - pip:
+      - git+git://github.com/SimonBoothroyd/constructure@master

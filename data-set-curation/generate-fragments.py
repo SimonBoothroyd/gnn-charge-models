@@ -3,7 +3,6 @@ import os
 from collections import defaultdict
 
 import click
-from matplotlib import pyplot
 from nagl.utilities.toolkits import capture_toolkit_warnings, stream_from_file
 from rdkit import Chem
 from rdkit.Chem import AllChem, Descriptors, Recap
@@ -51,8 +50,12 @@ def main(input_paths, output_directory):
     # Fragment the molecules
     allowed_elements = {"B", "Br", "C", "Cl", "F", "H", "I", "N", "O", "P", "S", "Si"}
 
-    rd_dummy = Chem.MolFromSmiles("*")
-    rd_hydrogen = Chem.MolFromSmiles("[H]")
+    rd_dummy_replacements = [
+        # Handle the special case of -S(=O)(=O)[*] -> -S(=O)(-[O-])
+        (Chem.MolFromSmiles("S(=O)(=O)*"), Chem.MolFromSmiles("S(=O)([O-])")),
+        # Handle the general case
+        (Chem.MolFromSmiles("*"), Chem.MolFromSmiles("[H]")),
+    ]
 
     unique_parents_by_n_heavy = defaultdict(set)
     unique_fragments_by_n_heavy = defaultdict(set)
@@ -77,17 +80,25 @@ def main(input_paths, output_directory):
 
         for fragment_node in fragment_nodes.values():
 
-            rd_fragment = AllChem.ReplaceSubstructs(
-                fragment_node.mol, rd_dummy, rd_hydrogen, True
-            )[0]
-            # Do a SMILES round-trip to avoid wierd issues with radical formation...
-            rd_fragment = Chem.MolFromSmiles(Chem.MolToSmiles(rd_fragment))
+            rd_fragment = fragment_node.mol
+
+            for rd_dummy, rd_replacement in rd_dummy_replacements:
+
+                rd_fragment = AllChem.ReplaceSubstructs(
+                    rd_fragment, rd_dummy, rd_replacement, True
+                )[0]
+                # Do a SMILES round-trip to avoid wierd issues with radical formation...
+                rd_fragment = Chem.MolFromSmiles(Chem.MolToSmiles(rd_fragment))
 
             if Descriptors.NumRadicalElectrons(rd_fragment) > 0:
                 logging.warning(f"A fragment of {parent_smiles} has a radical electron")
                 continue
 
             fragment_smiles = canonical_smiles(rd_fragment)
+
+            if "." in fragment_smiles:
+                # Skip dimers, trimers, etc.
+                continue
 
             if (
                 fragment_smiles
@@ -99,30 +110,8 @@ def main(input_paths, output_directory):
                 fragment_smiles
             )
 
-    # # Plot the distribution of parent / fragments by N heavy atoms
-    # x = sorted(unique_parents_by_n_heavy)
-    # y = [len(unique_parents_by_n_heavy[n]) for n in x]
-    #
-    # pyplot.bar(x, y)
-    # pyplot.title("n_parent")
-    # pyplot.show()
-    #
-    # x = sorted(unique_fragments_by_n_heavy)
-    # y = [len(unique_fragments_by_n_heavy[n]) for n in x]
-    #
-    # pyplot.bar(x, y)
-    # pyplot.title("n_fragment")
-    # pyplot.show()
-
     # Save the fragments
-    for n_heavy, fragment_smiles in unique_fragments_by_n_heavy.items():
-
-        with open(
-            os.path.join(output_directory, f"fragments-{n_heavy}.smi"), "w"
-        ) as file:
-            file.write("\n".join(fragment_smiles))
-
-    with open(os.path.join(output_directory, f"fragments-full.smi"), "w") as file:
+    with open(os.path.join(output_directory, "fragments-full.smi"), "w") as file:
         file.write(
             "\n".join(
                 fragment_pattern
@@ -137,7 +126,7 @@ def main(input_paths, output_directory):
         for fragment_pattern in unique_fragments_by_n_heavy[n_heavy]
     ]
 
-    with open(os.path.join(output_directory, f"fragments-small.smi"), "w") as file:
+    with open(os.path.join(output_directory, "fragments-small.smi"), "w") as file:
         file.write("\n".join(small_fragments))
 
 
