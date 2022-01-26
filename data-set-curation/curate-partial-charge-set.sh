@@ -20,13 +20,13 @@ conda activate gnn-charge-models
 
 mkdir -p staging && mkdir -p processed
 
-# Filter the NCI and Enamine sets according to the criteria proposed by
+# Filter the Enamine sets according to the criteria proposed by
 # Bleiziffer, Schaller and Riniker (see 10.1021/acs.jcim.7b00663)
-for name in "enamine-10240" "enamine-50240" "NCI-Open_2012-05-01"
+for name in "enamine-10240" "enamine-50240"
 do
 
   nagl prepare filter --input "raw/${name}.sdf.gz" \
-                      --output "staging/${name}.sdf.gz" \
+                      --output "staging/chg-${name}.sdf.gz" \
                       --strip-ions \
                       --n-processes 20
 
@@ -39,24 +39,23 @@ for name in "ChEMBL_eps_78.sdf.gz" \
             "OpenFF-Industry-Benchmark-Season-1-v1-1.smi"
 do
 
-  cp "raw/${name}" "staging/${name}"
+  cp "raw/${name}" "staging/chg-${name}"
 
 done
 
 # Enumerate a reasonable set of protomers (~7.4 pH) for each input structure
 for name in "enamine-10240.sdf.gz" \
             "enamine-50240.sdf.gz" \
-            "NCI-Open_2012-05-01.sdf.gz" \
             "ChEMBL_eps_78.sdf.gz" \
             "ZINC_eps_78.sdf.gz" \
             "OpenFF-Industry-Benchmark-Season-1-v1-1.smi"
 do
 
-  nagl prepare enumerate --input "staging/${name}" \
-                         --output "processed/${name%%.*}.sdf.gz" \
+  nagl prepare enumerate --input "staging/chg-${name}" \
+                         --output "processed/chg-${name%%.*}.sdf.gz" \
                          --no-tautomers \
                          --protomers \
-                         --max-protomers 4 \
+                         --max-protomers 2 \
                          --n-processes 20
 
 done

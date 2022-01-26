@@ -1,4 +1,6 @@
 import os
+from collections import defaultdict
+from pprint import pprint
 from typing import List
 
 from constructure.constructors import OpenEyeConstructor
@@ -325,6 +327,7 @@ def main():
     am1bcc = BCCCollection(parameters=parse_file_as(List[BCCParameter], "am1bcc.json"))
 
     valid_smiles = set()
+    coverage = defaultdict(int)
 
     for pattern in products:
 
@@ -333,15 +336,20 @@ def main():
         assert oechem.OEAddExplicitHydrogens(molecule)
 
         try:
-            BCCGenerator.applied_corrections(molecule, bcc_collection=am1bcc)
+            applied = BCCGenerator.applied_corrections(molecule, bcc_collection=am1bcc)
         except UnableToAssignChargeError:
             print(f"skipping {pattern} - cannot be assigned BCC parameters")
             continue
+
+        for bcc in applied:
+            coverage[bcc.provenance["code"]] += 1
 
         valid_smiles.add(pattern)
 
     with open(os.path.join("processed", "esp-am1bcc-set.smi"), "w") as file:
         file.write("\n".join(valid_smiles))
+
+    pprint(coverage)
 
 
 if __name__ == "__main__":
