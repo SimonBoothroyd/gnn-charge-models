@@ -17,8 +17,8 @@
 # Enable conda
 . ~/.bashrc
 
-conda activate nagl
-conda env export > conda-env-h-params.yml
+conda activate gnn-charge-models
+conda env export > train-gnn-charge-model-hparams.yml
 
 # Launch my program.
 module load cuda/11.0
@@ -45,12 +45,12 @@ export indices=( $(
 
 echo "MATRIX INDICES=${indices[*]}"
 
-python train-am1-q-model.py --train-set             "../data-set-labelling/am1-charges/chg-enamine-10240.sqlite" \
-                            --train-batch-size      ${batch_size[${indices[0]}]} \
-                            --val-set               "../data-set-labelling/am1-charges/chg-OpenFF-Industry-Benchmark-Season-1-v1-1.sqlite" \
-                            --n-gcn-layers          ${n_gcn_layers[${indices[1]}]} \
-                            --n-gcn-hidden-features ${n_gcn_hidden_features[${indices[2]}]} \
-                            --n-am1-layers          ${n_am1_layers[${indices[3]}]} \
-                            --n-am1-hidden-features ${n_am1_hidden_features[${indices[4]}]} \
-                            --learning-rate         ${learning_rate[${indices[5]}]} \
-                            --n-epochs              175
+python train-gnn-charge-model.py --train-set             "../data-set-labelling/am1-charges/chg-enamine-10240.sqlite" \
+                                 --train-batch-size      ${batch_size[${indices[0]}]} \
+                                 --val-set               "../data-set-labelling/am1-charges/chg-OpenFF-Industry-Benchmark-Season-1-v1-1.sqlite" \
+                                 --n-gcn-layers          ${n_gcn_layers[${indices[1]}]} \
+                                 --n-gcn-hidden-features ${n_gcn_hidden_features[${indices[2]}]} \
+                                 --n-am1-layers          ${n_am1_layers[${indices[3]}]} \
+                                 --n-am1-hidden-features ${n_am1_hidden_features[${indices[4]}]} \
+                                 --learning-rate         ${learning_rate[${indices[5]}]} \
+                                 --n-epochs              175
