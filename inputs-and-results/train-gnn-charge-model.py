@@ -4,10 +4,13 @@ import click
 import pytorch_lightning as pl
 import torch
 from click_option_group import optgroup
-from openff.toolkit.topology import Molecule
-from pytorch_lightning.loggers import TensorBoardLogger
-
-from nagl.features import AtomConnectivity, AtomFeature, AtomicElement
+from nagl.features import (
+    AtomConnectivity,
+    AtomFeature,
+    AtomicElement,
+    AtomIsInRing,
+    BondIsInRing,
+)
 from nagl.lightning import DGLMoleculeDataModule, DGLMoleculeLightningModel
 from nagl.nn import SequentialLayers
 from nagl.nn.modules import ConvolutionModule, ReadoutModule
@@ -15,6 +18,8 @@ from nagl.nn.pooling import PoolAtomFeatures
 from nagl.nn.postprocess import ComputePartialCharges
 from nagl.resonance import enumerate_resonance_forms
 from nagl.utilities.toolkits import normalize_molecule
+from openff.toolkit.topology import Molecule
+from pytorch_lightning.loggers import TensorBoardLogger
 
 
 class AtomAverageFormalCharge(AtomFeature):
@@ -160,9 +165,9 @@ def main(
         AtomicElement(["C", "O", "H", "N", "S", "F", "Br", "Cl", "I", "P"]),
         AtomConnectivity(),
         AtomAverageFormalCharge(),
+        AtomIsInRing(),
     ]
-    bond_features = [
-    ]
+    bond_features = [BondIsInRing()]
 
     # Load in the pre-processed training and test molecules and store them in
     # featurized graphs.

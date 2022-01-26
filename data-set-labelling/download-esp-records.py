@@ -12,14 +12,14 @@ from qcportal.models import ResultRecord
     "dataset_name",
     help="The name of the single point dataset to retrieve the records from.",
     type=str,
-    required=True
+    required=True,
 )
 @click.option(
     "--output",
     "output_path",
     help="The path (.pkl) to the save the records to.",
     type=click.Path(exists=False, dir_okay=False, file_okay=True),
-    required=True
+    required=True,
 )
 @click.command()
 def main(dataset_name, output_path):
@@ -63,7 +63,8 @@ def main(dataset_name, output_path):
 
         keyword_ids = list({record.keywords for record in records_by_id.values()})
         keywords = {
-            keyword_id: client.query_keywords(keyword_id)[0] for keyword_id in keyword_ids
+            keyword_id: client.query_keywords(keyword_id)[0]
+            for keyword_id in keyword_ids
         }
 
     console.print("keywords downloaded")
@@ -77,5 +78,5 @@ def main(dataset_name, output_path):
         pickle.dump((results, keywords), file)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
