@@ -158,7 +158,11 @@ def main(
 
     pprint(locals())
 
-    # pl.seed_everything(3992210414)  # h-parameter sweep v1
+    train_set_path = None if len(train_set_path) == 0 else train_set_path
+    val_set_path = None if len(val_set_path) == 0 else val_set_path
+    test_set_path = None if len(test_set_path) == 0 else test_set_path
+
+    pl.seed_everything(3992210414)  # h-parameter sweep v1
 
     # Define the features of interest.
     atom_features = [
@@ -229,7 +233,9 @@ def main(
     )
 
     trainer.fit(model, datamodule=data_module)
-    trainer.test(model, data_module)
+
+    if test_set_path is not None:
+        trainer.test(model, data_module)
 
 
 if __name__ == "__main__":

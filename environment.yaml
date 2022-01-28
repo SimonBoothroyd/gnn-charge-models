@@ -1,12 +1,12 @@
 name: gnn-charge-models
 
 channels:
-  - psi4
   - conda-forge
   - defaults
   - dglteam
   - openeye
   - simonboothroyd
+  - psi4
 
 dependencies:
 
@@ -14,14 +14,14 @@ dependencies:
   - pip
 
     # GNN models
-  - nagl >=0.0.4
+  - nagl >=0.0.5
   - dgl
   - dgl-cuda11.0  # gpu training
 
     # Model training
   - pytorch
   - pytorch-lightning
-# - pytorch =*=cuda
+  - pytorch-gpu  # gpu training
   - cudatoolkit =11.0  # gpu training
 
     # Molecule loading, processing and labelling.
@@ -31,10 +31,11 @@ dependencies:
   - rdkit
   - psi4 >=1.4
   - qcportal >=0.15
-  - h5py <0.3.2  # see conda-forge/h5py-feedstock/issues/103
+  - h5py <3.2  # see conda-forge/h5py-feedstock/issues/103
   - qcengine
   - msgpack-python  # needed for qcengine
   - geometric
+  - psiresp-base
 
     # Distributed molecule processing / labelling.
   - distributed
@@ -48,4 +49,4 @@ dependencies:
 
   - pip:
       - git+git://github.com/SimonBoothroyd/constructure  # am1bcc dataset generation
-      - psiresp
+
