@@ -1,3 +1,5 @@
+import os.path
+import pickle
 from pprint import pprint
 
 import click
@@ -28,7 +30,11 @@ class AtomAverageFormalCharge(AtomFeature):
 
     def __call__(self, molecule: Molecule) -> torch.Tensor:
 
-        molecule = normalize_molecule(molecule)
+        try:
+            molecule = normalize_molecule(molecule)
+        except AssertionError:
+            # See openff-toolkit/issues/1181
+            pass
 
         resonance_forms = enumerate_resonance_forms(
             molecule,
@@ -142,6 +148,12 @@ class AtomAverageFormalCharge(AtomFeature):
     show_default=True,
     required=True,
 )
+@optgroup.group("Other")
+@optgroup.option(
+    "--seed",
+    type=click.INT,
+    required=False,
+)
 @click.command()
 def main(
     train_set_path,
@@ -154,15 +166,19 @@ def main(
     n_am1_hidden_features,
     learning_rate,
     n_epochs,
+    seed,
 ):
 
+    print("CLI inputs:")
     pprint(locals())
+    print("")
 
     train_set_path = None if len(train_set_path) == 0 else train_set_path
     val_set_path = None if len(val_set_path) == 0 else val_set_path
     test_set_path = None if len(test_set_path) == 0 else test_set_path
 
-    pl.seed_everything(3992210414)  # h-parameter sweep v1
+    if seed is not None:
+        pl.seed_everything(seed)
 
     # Define the features of interest.
     atom_features = [
@@ -216,23 +232,28 @@ def main(
     n_gpus = 0 if not torch.cuda.is_available() else 1
     print(f"Using {n_gpus} GPUs")
 
-    logger = TensorBoardLogger(
-        "lightning-logs",
-        version=(
-            f"{train_batch_size}-"
-            f"{n_gcn_layers}-"
-            f"{n_gcn_hidden_features}-"
-            f"{n_am1_layers}-"
-            f"{n_am1_hidden_features}-"
-            f"{learning_rate}"
-        ),
+    version_string = (
+        f"{train_batch_size}-"
+        f"{n_gcn_layers}-"
+        f"{n_gcn_hidden_features}-"
+        f"{n_am1_layers}-"
+        f"{n_am1_hidden_features}-"
+        f"{learning_rate}"
     )
+
+    logger = TensorBoardLogger("lightning-logs", version=version_string)
 
     trainer = pl.Trainer(
         gpus=n_gpus, min_epochs=n_epochs, max_epochs=n_epochs, logger=logger
     )
 
     trainer.fit(model, datamodule=data_module)
+
+    with open(
+        os.path.join("lightning-logs", "default", version_string, "metrics.pkl"), "wb"
+    ) as file:
+
+        pickle.dump((trainer.callback_metrics, trainer.logged_metrics), file)
 
     if test_set_path is not None:
         trainer.test(model, data_module)

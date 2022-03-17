@@ -1,10 +1,14 @@
+import json
 import pickle
+from collections import defaultdict
 
 import click
 import rich
 from qcportal import FractalClient
 from qcportal.collections import Dataset
 from qcportal.models import ResultRecord
+from rich.padding import Padding
+from rich.pretty import Pretty
 
 
 @click.option(
@@ -42,7 +46,13 @@ def main(dataset_name, output_path):
             record.id: record.molecule for record in records_by_id.values()
         }
 
+    records_with_status = defaultdict(int)
+
+    for record in records_by_id.values():
+        records_with_status[record.status.value] += 1
+
     console.print("records downloaded")
+    console.print(Padding(Pretty(records_with_status), (1, 1, 1, 1)))
 
     with console.status("downloading molecules"):
 
@@ -76,6 +86,9 @@ def main(dataset_name, output_path):
 
     with open(output_path, "wb") as file:
         pickle.dump((results, keywords), file)
+
+    with open(output_path.replace(".pkl", ".json"), "w") as file:
+        json.dump(sorted(records_by_id), file)
 
 
 if __name__ == "__main__":

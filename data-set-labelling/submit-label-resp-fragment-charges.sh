@@ -19,7 +19,7 @@
 conda activate gnn-charge-models
 conda env export > "conda-env.yml"
 
-python label-resp-charges.py --input "resp-fragment-charges/esp-fragment-records.pkl" \
-                             --output "resp-fragment-charges/resp-charges" \
+python label-resp-charges.py --input  "resp-charges/esp-fragment-records.pkl" \
+                             --output "resp-charges/fragment-set" \
                              --batch-size 32 \
                              --batch-idx $(( $LSB_JOBINDEX - 1 ))

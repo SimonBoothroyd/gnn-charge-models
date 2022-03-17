@@ -1,8 +1,11 @@
 import itertools
+import os.path
 
+import click
 from openeye import oechem
 
 
+@click.command()
 def main():
 
     natural_codes = [
@@ -54,7 +57,7 @@ def main():
 
         smiles.append(oechem.OEMolToSmiles(oe_molecule))
 
-    with open("processed/esp-amino-acid-set.smi", "w") as file:
+    with open(os.path.join("data", "processed", "esp-amino-acid-set.smi"), "w") as file:
         file.write("\n".join(smiles))
 
 

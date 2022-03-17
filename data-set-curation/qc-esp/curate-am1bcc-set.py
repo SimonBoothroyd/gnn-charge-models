@@ -3,14 +3,16 @@ from collections import defaultdict
 from pprint import pprint
 from typing import List
 
+import click
 from constructure.constructors import OpenEyeConstructor
 from constructure.scaffolds import Scaffold
-from openeye import oechem
 from openff.recharge.charges.bcc import BCCCollection, BCCGenerator, BCCParameter
-from openff.recharge.charges.exceptions import UnableToAssignChargeError
+from openff.recharge.charges.exceptions import ChargeAssignmentError
+from openff.toolkit.topology import Molecule
 from pydantic import parse_file_as
 
 
+@click.command()
 def main():
 
     reactions = [
@@ -331,13 +333,11 @@ def main():
 
     for pattern in products:
 
-        molecule: oechem.OEMol = oechem.OEMol()
-        oechem.OESmilesToMol(molecule, pattern)
-        assert oechem.OEAddExplicitHydrogens(molecule)
+        molecule: Molecule = Molecule.from_smiles(pattern, allow_undefined_stereo=True)
 
         try:
             applied = BCCGenerator.applied_corrections(molecule, bcc_collection=am1bcc)
-        except UnableToAssignChargeError:
+        except ChargeAssignmentError:
             print(f"skipping {pattern} - cannot be assigned BCC parameters")
             continue
 
@@ -346,7 +346,7 @@ def main():
 
         valid_smiles.add(pattern)
 
-    with open(os.path.join("processed", "esp-am1bcc-set.smi"), "w") as file:
+    with open(os.path.join("data", "processed", "esp-am1bcc-set.smi"), "w") as file:
         file.write("\n".join(valid_smiles))
 
     pprint(coverage)
