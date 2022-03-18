@@ -8,7 +8,6 @@ def generate():
     grid_settings = {
         "msk-default.json": MSKGridSettings(),
         "fcc-default.json": LatticeGridSettings(),
-        "fcc-0-7.json": LatticeGridSettings(spacing=0.7),
     }
 
     for file_name, settings in grid_settings.items():

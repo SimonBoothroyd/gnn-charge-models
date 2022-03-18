@@ -1,12 +1,12 @@
 name: gnn-charge-models
 
 channels:
+  - psi4
   - conda-forge
   - defaults
   - dglteam
   - openeye
   - simonboothroyd
-  - psi4
 
 dependencies:
 
@@ -26,10 +26,10 @@ dependencies:
 
     # Molecule loading, processing and labelling.
   - openff-toolkit-base >=0.9.1
-  - openff-recharge >=0.0.4  # esp / electric field
+  - openff-recharge >=0.1.3  # esp / electric field
   - openeye-toolkits
   - rdkit
-  - psi4 >=1.4
+  - psi4 >=1.5
   - qcportal >=0.15
   - h5py <3.2  # see conda-forge/h5py-feedstock/issues/103
   - qcengine
@@ -49,4 +49,3 @@ dependencies:
 
   - pip:
       - git+git://github.com/SimonBoothroyd/constructure  # am1bcc dataset generation
-
