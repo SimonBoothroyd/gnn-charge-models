@@ -1,4 +1,5 @@
 import json
+import pathlib
 import pickle
 from collections import defaultdict
 
@@ -83,6 +84,9 @@ def main(dataset_name, output_path):
         (records_by_id[record_id], molecules[record_id_to_molecule_id[record_id]])
         for record_id in records_by_id
     ]
+
+    path = pathlib.Path(output_path)
+    path.parent.mkdir(parents=True, exist_ok=True)
 
     with open(output_path, "wb") as file:
         pickle.dump((results, keywords), file)

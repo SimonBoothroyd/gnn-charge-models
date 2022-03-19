@@ -1,3 +1,4 @@
+import pathlib
 import pickle
 from typing import Dict, Tuple
 
@@ -120,6 +121,9 @@ def main(
             total=len(batch_qc_results),
         )
     )
+
+    path = pathlib.Path(output_path)
+    path.parent.mkdir(parents=True, exist_ok=True)
 
     with open(output_path, "wb") as file:
         pickle.dump(esp_records, file)
