@@ -1,130 +1,129 @@
-import os
+import functools
+import pathlib
 import pickle
 from collections import defaultdict
-from typing import Dict, List, Tuple
+from multiprocessing import Pool
+from typing import List, Tuple
 
 import click
 import numpy
-import psiresp
-from openff.recharge.esp.qcresults import from_qcportal_results
+import rich
+from nagl.storage import (
+    ConformerRecord,
+    MoleculeRecord,
+    MoleculeStore,
+    PartialChargeSet,
+)
+from nagl.utilities.toolkits import capture_toolkit_warnings
+from openff.recharge.charges.exceptions import ChargeAssignmentError
+from openff.recharge.charges.library import (
+    LibraryChargeCollection,
+    LibraryChargeGenerator,
+)
+from openff.recharge.charges.resp import generate_resp_charge_parameter
+from openff.recharge.charges.resp.solvers import IterativeSolver
 from openff.recharge.esp.storage import MoleculeESPRecord
-from openff.recharge.grids import MSKGridSettings
-from openff.units import unit
-from psiresp import Conformer, Orientation
-from qcportal.models import KeywordSet
-from qcportal.models import Molecule as QCMolecule
-from qcportal.models import ResultRecord as QCRecord
-from tqdm import tqdm
+from openff.toolkit.topology import Molecule
+from rich.progress import track
+
+
+@functools.lru_cache
+def molecule_from_mapped_smiles(smiles: str) -> Molecule:
+    return Molecule.from_mapped_smiles(smiles, allow_undefined_stereo=True)
 
 
 def _compute_resp_charges(
-    input_tuple: Tuple[str, List[Tuple[QCRecord, QCMolecule]]],
-    qc_keywords: Dict[str, KeywordSet],
-) -> Tuple[str, numpy.ndarray]:
+    esp_record_and_molecules: List[Tuple[MoleculeESPRecord, Molecule]]
+) -> MoleculeRecord:
 
-    cmiles, qc_results = input_tuple
+    with capture_toolkit_warnings():
 
-    _, qc_molecule = qc_results[0]
-    resp_molecule = psiresp.Molecule(qcmol=qc_molecule)
+        esp_records, molecules = zip(*esp_record_and_molecules)
 
-    for qc_record, qc_molecule in qc_results:
+        molecule = molecules[0]
+        charge_parameter = None
+        try:
+            charge_parameter = generate_resp_charge_parameter(
+                esp_records, IterativeSolver()
+            )
 
-        qc_keyword_set = qc_keywords[qc_record.keywords]
+            charges = LibraryChargeGenerator.generate(
+                molecule, LibraryChargeCollection(parameters=[charge_parameter])
+            )
+        except ChargeAssignmentError:
 
-        esp_record: MoleculeESPRecord = from_qcportal_results(
-            qc_record,
-            qc_molecule,
-            qc_keyword_set,
-            MSKGridSettings(),
-            compute_field=False,
+            with open("failed.pkl", "wb") as file:
+                pickle.dump(esp_record_and_molecules, file)
+
+            print("FAILED", molecule.to_smiles(), charge_parameter.smiles)
+
+        return MoleculeRecord(
+            smiles=molecule.to_smiles(mapped=True),
+            conformers=[
+                ConformerRecord(
+                    coordinates=numpy.zeros((len(charges), 3)),
+                    partial_charges=[
+                        PartialChargeSet(
+                            method="resp",
+                            values=charges.flatten().tolist(),
+                        )
+                    ],
+                )
+            ],
         )
-
-        orientation = Orientation(qcmol=qc_molecule)
-        orientation.grid = esp_record.grid_coordinates_quantity.to(unit.angstrom).m
-        orientation.esp = esp_record.esp_quantity.to(unit.hartree / unit.e).m.flatten()
-
-        conformer = Conformer(qcmol=qc_molecule)
-        conformer.orientations.append(orientation)
-
-        resp_molecule.conformers.append(conformer)
-
-    job = psiresp.Job(molecules=[resp_molecule])
-    charges = job.compute_charges()[0]
-
-    return cmiles, charges
 
 
 @click.option(
     "--input",
     "input_path",
-    help="The path (.pkl) to the saved QC data to derive the RESP charges from.",
+    help="The path (.pkl) to the pickled ESP records.",
     type=click.Path(exists=True, dir_okay=False, file_okay=True),
     required=True,
 )
 @click.option(
     "--output",
-    "output_directory",
-    help="The directory to save the RESP charges in.",
-    type=click.Path(exists=False, dir_okay=True, file_okay=False),
+    "output_path",
+    help="The path (.sqlite) to the store to store the charges in.",
+    type=click.Path(exists=False, dir_okay=False, file_okay=True),
     required=True,
 )
-@click.option(
-    "--batch-size",
-    type=int,
-    default=128,
-    help="The size of the batch to compute.",
-    show_default=True,
-)
-@click.option(
-    "--batch-idx",
-    "batch_index",
-    type=int,
-    default=0,
-    help="The (zero-based) index of the batch to compute.",
-    show_default=True,
-)
 @click.command()
-def main(input_path, output_directory, batch_size, batch_index):
+def main(input_path, output_path):
+
+    console = rich.get_console()
 
     with open(input_path, "rb") as file:
-        qc_results, qc_keywords = pickle.load(file)
+        all_esp_records = pickle.load(file)["esp-records"]
 
-    qc_results_per_molecule = defaultdict(list)
+    esp_records_by_smiles = defaultdict(list)
 
-    for qc_record, qc_molecule in tqdm(qc_results):
+    with capture_toolkit_warnings():
 
-        cmiles = qc_molecule.extras[
-            "canonical_isomeric_explicit_hydrogen_mapped_smiles"
-        ]
-        qc_results_per_molecule[cmiles].append((qc_record, qc_molecule))
+        for esp_record in track(
+            all_esp_records, description="sorting records", transient=True
+        ):
 
-    batch_cmiles = sorted(qc_results_per_molecule)[
-        batch_index * batch_size : (batch_index + 1) * batch_size
-    ]
+            molecule = molecule_from_mapped_smiles(esp_record.tagged_smiles)
+            smiles = molecule.to_smiles(isomeric=True, mapped=False)
 
-    batch_qc_results = {
-        cmiles: qc_results_per_molecule[cmiles] for cmiles in batch_cmiles
-    }
+            esp_records_by_smiles[smiles].append((esp_record, molecule))
 
-    charges = list(
-        tqdm(
-            (
-                _compute_resp_charges(input_tuple, qc_keywords=qc_keywords)
-                for input_tuple in batch_qc_results.items()
-            ),
-            desc="RESP charges",
-            total=len(batch_qc_results),
+    with Pool(processes=10) as pool:
+
+        charge_records = list(
+            track(
+                pool.imap(_compute_resp_charges, esp_records_by_smiles.values()),
+                description="computing charges",
+                total=len(esp_records_by_smiles),
+            )
         )
-    )
 
-    os.makedirs(output_directory, exist_ok=True)
+    path = pathlib.Path(output_path)
+    path.parent.mkdir(parents=True, exist_ok=True)
 
-    output_name = (
-        f"{os.path.splitext(os.path.basename(input_path))[0]}-{batch_index}.pkl"
-    )
-
-    with open(os.path.join(output_directory, output_name), "wb") as file:
-        pickle.dump(charges, file)
+    with console.status("storing RESP charges"):
+        record_store = MoleculeStore(output_path)
+        record_store.store(*charge_records)
 
 
 if __name__ == "__main__":

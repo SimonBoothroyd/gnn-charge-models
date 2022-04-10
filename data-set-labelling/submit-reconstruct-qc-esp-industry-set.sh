@@ -19,7 +19,7 @@
 conda activate gnn-charge-models
 conda env export > "qc-esp/industry-set-conda-env.yml"
 
-python reconstruct-qc-esp.py --input  "qc-esp/esp-industry-records.pkl" \
+python reconstruct-qc-esp.py --input  "qc-esp/qc-records-industry.pkl" \
                              --output "qc-esp/industry-set/msk-default-$LSB_JOBINDEX.pkl" \
                              --grid   "grid-settings/msk-default.json"  \
                              --batch-size 32                            \

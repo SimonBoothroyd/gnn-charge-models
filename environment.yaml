@@ -14,7 +14,7 @@ dependencies:
   - pip
 
     # GNN models
-  - nagl >=0.0.5
+  - nagl >=0.0.7
   - dgl
   - dgl-cuda11.0  # gpu training
 
@@ -26,7 +26,7 @@ dependencies:
 
     # Molecule loading, processing and labelling.
   - openff-toolkit-base >=0.9.1
-  - openff-recharge >=0.1.3  # esp / electric field
+  - openff-recharge >=0.2.2  # (r)esp / electric field
   - openeye-toolkits
   - rdkit
   - psi4 >=1.5
@@ -35,7 +35,6 @@ dependencies:
   - qcengine
   - msgpack-python  # needed for qcengine
   - geometric
-  - psiresp-base
 
     # Distributed molecule processing / labelling.
   - distributed
