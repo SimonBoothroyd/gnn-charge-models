@@ -139,7 +139,7 @@ def compute_test_rmse(
     ],
     bcc_collection: BCCCollection,
     vsite_collection: Optional[VirtualSiteCollection],
-    n_processes: int
+    n_processes: int,
 ) -> Dict[str, float]:
 
     esp_records_by_smiles = defaultdict(list)
@@ -160,7 +160,7 @@ def compute_test_rmse(
             compute_test_molecule_rmse,
             charge_collection=charge_collection,
             bcc_collection=bcc_collection,
-            vsite_collection=vsite_collection
+            vsite_collection=vsite_collection,
         )
 
         smiles_list, smiles_esp_records = zip(*esp_records_by_smiles.items())
@@ -169,7 +169,7 @@ def compute_test_rmse(
             track(
                 pool.imap(per_molecule_rmse_func, smiles_esp_records),
                 "computing per molecule RMSE",
-                total=len(smiles_esp_records)
+                total=len(smiles_esp_records),
             )
         )
 
@@ -271,7 +271,11 @@ def main(
     console.print("")
 
     per_molecule_rmse = compute_test_rmse(
-        esp_records_test, charge_collection, bcc_collection, vsite_collection, n_processes
+        esp_records_test,
+        charge_collection,
+        bcc_collection,
+        vsite_collection,
+        n_processes,
     )
 
     with open(output_path, "w") as file:
