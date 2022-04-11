@@ -163,6 +163,14 @@ class AtomAverageFormalCharge(AtomFeature):
     type=click.INT,
     required=False,
 )
+@optgroup.option(
+    "--output-dir",
+    "output_directory",
+    type=click.Path(exists=False, file_okay=False, dir_okay=True),
+    default="lightning-logs",
+    show_default=True,
+    required=False,
+)
 @click.command()
 def main(
     train_set_path,
@@ -177,6 +185,7 @@ def main(
     learning_rate,
     n_epochs,
     seed,
+    output_directory
 ):
 
     cli_inputs = locals()
@@ -265,7 +274,8 @@ def main(
         f"{learning_rate}"
     )
 
-    logger = TensorBoardLogger("lightning-logs", version=version_string)
+    os.makedirs(output_directory, exist_ok=True)
+    logger = TensorBoardLogger(output_directory, version=version_string)
 
     trainer = pl.Trainer(
         gpus=n_gpus, min_epochs=n_epochs, max_epochs=n_epochs, logger=logger
@@ -274,7 +284,7 @@ def main(
     trainer.fit(model, datamodule=data_module)
 
     with open(
-        os.path.join("lightning-logs", "default", version_string, "metrics.pkl"), "wb"
+        os.path.join(output_directory, "default", version_string, "metrics.pkl"), "wb"
     ) as file:
 
         pickle.dump((trainer.callback_metrics, trainer.logged_metrics), file)
