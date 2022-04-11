@@ -4,6 +4,7 @@ from pprint import pprint
 
 import click
 import pytorch_lightning as pl
+import rich
 import torch
 from click_option_group import optgroup
 from nagl.features import (
@@ -22,6 +23,8 @@ from nagl.resonance import enumerate_resonance_forms
 from nagl.utilities.toolkits import normalize_molecule
 from openff.toolkit.topology import Molecule
 from pytorch_lightning.loggers import TensorBoardLogger
+from rich import pretty
+from rich.console import NewLine
 
 
 class AtomAverageFormalCharge(AtomFeature):
@@ -104,6 +107,12 @@ class AtomAverageFormalCharge(AtomFeature):
     required=False,
     multiple=True,
 )
+@optgroup.option(
+    "--charge-method",
+    "partial_charge_method",
+    type=click.STRING,
+    required=True,
+)
 @optgroup.group("Model")
 @optgroup.option(
     "--n-gcn-layers",
@@ -160,6 +169,7 @@ def main(
     train_batch_size,
     val_set_path,
     test_set_path,
+    partial_charge_method,
     n_gcn_layers,
     n_gcn_hidden_features,
     n_am1_layers,
@@ -169,9 +179,15 @@ def main(
     seed,
 ):
 
-    print("CLI inputs:")
-    pprint(locals())
-    print("")
+    cli_inputs = locals()
+
+    console = rich.get_console()
+    pretty.install(console)
+
+    console.rule("CLI inputs")
+    console.print(NewLine())
+    pprint(cli_inputs)
+    console.print(NewLine())
 
     train_set_path = None if len(train_set_path) == 0 else train_set_path
     val_set_path = None if len(val_set_path) == 0 else val_set_path
@@ -194,7 +210,7 @@ def main(
     data_module = DGLMoleculeDataModule(
         atom_features,
         bond_features,
-        partial_charge_method="am1",
+        partial_charge_method=partial_charge_method,
         bond_order_method=None,
         train_set_path=train_set_path,
         train_batch_size=train_batch_size,
@@ -214,7 +230,7 @@ def main(
             hidden_feats=[n_gcn_hidden_features] * n_gcn_layers,
         ),
         readout_modules={
-            "am1-charges": ReadoutModule(
+            f"{partial_charge_method}-charges": ReadoutModule(
                 pooling_layer=PoolAtomFeatures(),
                 readout_layers=SequentialLayers(
                     in_feats=n_gcn_hidden_features,
@@ -226,7 +242,15 @@ def main(
         },
         learning_rate=learning_rate,
     )
-    print(model)
+
+    console.print(NewLine())
+    console.rule("model")
+    console.print(NewLine())
+    console.print(model)
+
+    console.print(NewLine())
+    console.rule("training")
+    console.print(NewLine())
 
     # Train the model
     n_gpus = 0 if not torch.cuda.is_available() else 1

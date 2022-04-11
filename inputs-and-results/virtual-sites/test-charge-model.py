@@ -80,18 +80,22 @@ def compute_test_molecule_rmse(
                 molecule, conformer_settings, charge_settings
             )
 
-        atom_charges = LibraryChargeGenerator.generate(
-            molecule, charge_collection
-        ) + BCCGenerator.generate(molecule, bcc_collection)
-        vsite_charges = VirtualSiteGenerator.generate_charge_increments(
-            molecule, vsite_collection
-        )
+        atom_charges = LibraryChargeGenerator.generate(molecule, charge_collection)
 
-        n_vsites = len(vsite_charges) - molecule.n_atoms
+        if len(bcc_collection.parameters) > 0:
+            atom_charges += BCCGenerator.generate(molecule, bcc_collection)
 
-        full_charges = (
-            numpy.vstack([atom_charges, numpy.zeros((n_vsites, 1))]) + vsite_charges
-        )
+        if len(vsite_collection.parameters) > 0:
+            vsite_charges = VirtualSiteGenerator.generate_charge_increments(
+                molecule, vsite_collection
+            )
+            n_vsites = len(vsite_charges) - molecule.n_atoms
+
+            full_charges = (
+                numpy.vstack([atom_charges, numpy.zeros((n_vsites, 1))]) + vsite_charges
+            )
+        else:
+            full_charges = atom_charges
 
         per_record_rmse = []
 
@@ -259,7 +263,8 @@ def main(
         bcc_collection = BCCCollection(parameters=[])
 
     if vsite_collection_path is not None:
-        vsite_collection = VirtualSiteCollection.parse_file(vsite_collection_path)
+        with capture_toolkit_warnings():
+            vsite_collection = VirtualSiteCollection.parse_file(vsite_collection_path)
     else:
         vsite_collection = VirtualSiteCollection(parameters=[])
 

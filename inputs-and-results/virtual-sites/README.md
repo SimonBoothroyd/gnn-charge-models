@@ -59,13 +59,9 @@ python ../test-charge-model.py                              \
     --output                    "no-v-sites/lr-0.005-n-200/test-per-molecule-rmse.json"
 
 python ../test-charge-model.py                              \
-    --input-esp-records         "train-esp-records.pkl"     \
+    --input-esp-records         "test-esp-records.pkl"     \
     --input-parameters-base     "v-sites/lr-0.005-n-200-rad-1.0-str-100-wth-0.4/final-parameters-base.json"  \
     --input-parameters-bcc      "v-sites/lr-0.005-n-200-rad-1.0-str-100-wth-0.4/final-parameters-bcc.json"   \
     --input-parameters-vsite    "v-sites/lr-0.005-n-200-rad-1.0-str-100-wth-0.4/final-parameters-vsite.json" \
     --output-directory          "v-sites/lr-0.005-n-200-rad-1.0-str-100-wth-0.4/test-per-molecule-rmse.json"
-```
-
-```shell
-    --input-esp-records "test-esp-records.pkl" --input-parameters-base "no-v-sites/lr-0.005-n-200/final-parameters-base.json" --input-parameters-bcc "no-v-sites/lr-0.005-n-200/final-parameters-bcc.json" --output "no-v-sites/lr-0.005-n-200/test-per-molecule-rmse.json"
 ```

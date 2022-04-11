@@ -28,9 +28,10 @@ python train-gnn-charge-model.py --train-set             "../data-set-labelling/
                                  --train-batch-size      256                                                          \
                                  --val-set               "../data-set-labelling/am1-charges/chg-enamine-10240.sqlite" \
                                  --test-set              "../data-set-labelling/am1-charges/chg-OpenFF-Industry-Benchmark-Season-1-v1-1.sqlite" \
-                                 --n-gcn-layers          5                                                            \
+                                 --charge-method         "am1"                                                        \
+                                 --n-gcn-layers          6                                                            \
                                  --n-gcn-hidden-features 128                                                          \
-                                 --n-am1-layers          2                                                            \
+                                 --n-am1-layers          0                                                            \
                                  --n-am1-hidden-features 64                                                           \
                                  --learning-rate         0.001                                                        \
                                  --n-epochs              400
