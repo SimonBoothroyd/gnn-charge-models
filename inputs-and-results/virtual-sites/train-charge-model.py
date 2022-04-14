@@ -228,8 +228,8 @@ def compute_vsite_pentalty(
         penalty += (
             0.5
             * restraint_strength
-            * (distance - restraint_width) ** 2
-            * torch.where(distance - restraint_width > 0, 1.0, 0.0)
+            * (distance - restraint_width * 0.5) ** 2
+            * torch.where(distance - restraint_width * 0.5 > 0, 1.0, 0.0)
         )
 
     return penalty.reshape([])
@@ -246,7 +246,9 @@ def copy_final_values(
 ) -> Tuple[BCCCollection, VirtualSiteCollection]:
 
     bcc_collection = copy.deepcopy(bcc_collection)
+
     vsite_collection = copy.deepcopy(vsite_collection)
+    vsite_collection.aromaticity_model = "MDL"
 
     final_charge_increments = current_charge_increments.detach().numpy()
 
