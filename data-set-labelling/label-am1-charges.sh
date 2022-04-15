@@ -19,7 +19,7 @@
 conda activate gnn-charge-models
 conda env export > label-am1-charges-env.yaml
 
-rm -rf charges && mkdir -p charges
+rm -rf am1-charges && mkdir -p am1-charges
 
 # Compute the AM1 partial charges and multi-conformer WBO for each molecule.
 for name in "chg-enamine-10240.sdf.gz" \
@@ -29,10 +29,10 @@ for name in "chg-enamine-10240.sdf.gz" \
             "chg-OpenFF-Industry-Benchmark-Season-1-v1-1.sdf.gz"
 do
 
-  nagl label --input "../data-set-curation/processed/${name}"   \
+  nagl label --input "../data-set-curation/qc-charges/data/processed/${name}"   \
              --output "am1-charges/${name%%.*}.sqlite"              \
              --conf-rms 0.5                                     \
-             --n-workers 400                                    \
+             --n-workers 300                                    \
              --batch-size 250                                   \
              --worker-type lsf                                  \
              --lsf-memory 4                                     \
