@@ -32,11 +32,14 @@ def process_molecule(
 
         molecule: Molecule = Molecule.from_smiles(smiles, allow_undefined_stereo=True)
 
-        vsite_index_to_smirks = {
-            i: parameter.smirks
-            for parameter in vsite_collection.parameters
-            for i in range(len(parameter.charge_increments))
-        }
+        vsite_index_to_smirks = {}
+        counter = 0
+
+        for parameter in vsite_collection.parameters:
+            for i in range(len(parameter.charge_increments)):
+                vsite_index_to_smirks[counter] = parameter.smirks
+                counter += 1
+
         vsite_assignment_matrix = VirtualSiteGenerator.build_charge_assignment_matrix(
             molecule, vsite_collection
         )

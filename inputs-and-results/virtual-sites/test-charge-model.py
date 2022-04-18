@@ -252,10 +252,13 @@ def main(
     console.rule("model parameters")
     console.print("")
 
-    charge_collection = parse_file_as(
-        Union[Tuple[ConformerSettings, QCChargeSettings], LibraryChargeCollection],
-        charge_collection_path,
-    )
+    with capture_toolkit_warnings():
+        with console.status("loading base charge model"):
+
+            charge_collection = parse_file_as(
+                Union[Tuple[ConformerSettings, QCChargeSettings], LibraryChargeCollection],
+                charge_collection_path,
+            )
 
     if bcc_collection_path is not None:
         bcc_collection = BCCCollection.parse_file(bcc_collection_path)

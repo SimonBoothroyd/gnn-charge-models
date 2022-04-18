@@ -187,7 +187,11 @@ def vectorize_collections(
     vsite_charge_parameter_keys,
     vsite_coordinate_parameter_keys,
 ):
-    current_charge_increments = bcc_collection.vectorize(bcc_parameter_keys)
+    if len(bcc_parameter_keys) > 0:
+        current_charge_increments = bcc_collection.vectorize(bcc_parameter_keys)
+    else:
+        current_charge_increments = numpy.zeros((0, 1))
+
     if len(vsite_charge_parameter_keys) > 0:
         current_charge_increments = numpy.vstack(
             [
