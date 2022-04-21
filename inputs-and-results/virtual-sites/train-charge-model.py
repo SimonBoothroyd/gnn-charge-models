@@ -421,7 +421,10 @@ def main(
         parameter.smirks
         for parameter in bcc_collection.parameters
         if coverage_train["bcc"].get(parameter.smirks, 0) > 0
-        and parameter.provenance["code"][:2] != parameter.provenance["code"][-2:]
+        and (
+            parameter.provenance is None
+            or parameter.provenance["code"][:2] != parameter.provenance["code"][-2:]
+        )
     ]
 
     console.print("* BCC parameters")

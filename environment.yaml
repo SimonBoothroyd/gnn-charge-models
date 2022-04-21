@@ -10,22 +10,22 @@ channels:
 
 dependencies:
 
-  - python
+  - python >=3.8
   - pip
 
     # GNN models
   - nagl >=0.0.7
   - dgl
-  - dgl-cuda11.0  # gpu training
+#  - dgl-cuda11.0  # gpu training
 
     # Model training
-  - pytorch
+  - pytorch <=1.10
   - pytorch-lightning
-  - pytorch-gpu  # gpu training
-  - cudatoolkit =11.0  # gpu training
+#  - pytorch-gpu  # gpu training
+#  - cudatoolkit =11.0  # gpu training
 
     # Molecule loading, processing and labelling.
-  - openff-toolkit-base >=0.9.1
+  - openff-toolkit-base >=0.10.5
   - openff-recharge >=0.2.2  # (r)esp / electric field
   - openeye-toolkits
   - rdkit
@@ -39,6 +39,12 @@ dependencies:
     # Distributed molecule processing / labelling.
   - distributed
   - dask-jobqueue
+
+    # Train / test
+  - openff-evaluator-base
+  - nonbonded
+#  - absolv
+#  - openmmtools
 
   # Common dependencies
   - tqdm

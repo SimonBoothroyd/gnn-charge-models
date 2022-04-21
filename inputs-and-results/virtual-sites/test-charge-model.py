@@ -125,7 +125,7 @@ def compute_test_molecule_rmse(
                 esp_record.grid_coordinates, full_coordinates.m_as(unit.angstrom)
             )
             inverse_distance_matrix = unit.convert(
-                inverse_distance_matrix, unit.angstrom ** -1, unit.bohr ** -1
+                inverse_distance_matrix, unit.angstrom**-1, unit.bohr**-1
             )
 
             delta = inverse_distance_matrix @ full_charges - esp_record.esp
@@ -256,7 +256,9 @@ def main(
         with console.status("loading base charge model"):
 
             charge_collection = parse_file_as(
-                Union[Tuple[ConformerSettings, QCChargeSettings], LibraryChargeCollection],
+                Union[
+                    Tuple[ConformerSettings, QCChargeSettings], LibraryChargeCollection
+                ],
                 charge_collection_path,
             )
 
