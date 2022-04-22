@@ -201,9 +201,12 @@ def vectorize_collections(
                 ),
             ]
         )
+
     current_charge_increments = to_torch(current_charge_increments)
     current_charge_increments.requires_grad = True
+
     parameters_to_optimize = [current_charge_increments]
+
     if len(vsite_coordinate_parameter_keys) > 0:
         current_vsite_coordinates = vsite_collection.vectorize_coordinates(
             vsite_coordinate_parameter_keys
@@ -214,6 +217,7 @@ def vectorize_collections(
         parameters_to_optimize.append(current_vsite_coordinates)
     else:
         current_vsite_coordinates = None
+
     return current_charge_increments, current_vsite_coordinates, parameters_to_optimize
 
 

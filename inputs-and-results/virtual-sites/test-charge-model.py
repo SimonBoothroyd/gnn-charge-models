@@ -109,13 +109,13 @@ def compute_test_molecule_rmse(
             _, mapping = Molecule.are_isomorphic(
                 esp_molecule, molecule, return_atom_map=True
             )
-            esp_molecule.remap(mapping, current_to_new=True)
+            esp_molecule = esp_molecule.remap(mapping, current_to_new=True)
 
             [esp_conformer] = extract_conformers(esp_molecule)
 
             if len(vsite_collection.parameters) > 0:
                 vsite_coordinates = VirtualSiteGenerator.generate_positions(
-                    molecule, vsite_collection, esp_conformer
+                    esp_molecule, vsite_collection, esp_conformer
                 )
                 full_coordinates = numpy.vstack([esp_conformer, vsite_coordinates])
             else:
