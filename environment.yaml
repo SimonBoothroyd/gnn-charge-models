@@ -50,7 +50,5 @@ dependencies:
   - tqdm
   - seaborn
   - splore
+  - molesp
   - rich
-
-  - pip:
-      - git+git://github.com/SimonBoothroyd/constructure  # am1bcc dataset generation

@@ -80,6 +80,13 @@ def process_molecule(
     required=True,
 )
 @click.option(
+    "--exclusions",
+    "exclusions_path",
+    help="The file path to the set of molecules (.SMI) to exclude from the output.",
+    type=click.Path(exists=True, file_okay=True, dir_okay=False),
+    required=False,
+)
+@click.option(
     "--output-records",
     "output_path",
     help="The path to save the selected records to as a pickled list of ESP "
@@ -116,6 +123,7 @@ def process_molecule(
 )
 def main(
     input_path,
+    exclusions_path,
     output_path,
     coverage_path,
     bcc_collection_path,
@@ -129,6 +137,17 @@ def main(
     bcc_collection = BCCCollection.parse_file(bcc_collection_path)
 
     # Load in the training and test sets, filtering out any redundant molecules.
+    if exclusions_path is not None:
+
+        with open(exclusions_path) as file:
+            exclusions = {
+                to_canonical_smiles(smiles)
+                for smiles in file.read().split("\n")
+                if len(smiles) > 0
+            }
+    else:
+        exclusions = {}
+
     console.print(
         f"extracting records from [repr.filename]{input_path}[/repr.filename]"
     )
@@ -138,10 +157,21 @@ def main(
 
     esp_records_by_molecule = defaultdict(list)
 
+    n_excluded = 0
+
     for esp_record in track(esp_records, description="sorting records by molecule"):
 
-        esp_records_by_molecule[to_canonical_smiles(esp_record.tagged_smiles)].append(
-            esp_record
+        canonical_smiles = to_canonical_smiles(esp_record.tagged_smiles)
+
+        if canonical_smiles in exclusions:
+            n_excluded += 1
+            continue
+
+        esp_records_by_molecule[canonical_smiles].append(esp_record)
+
+    if len(exclusions) > 0:
+        console.print(
+            f"{n_excluded} molecules exclude, {len(esp_records_by_molecule)} retained"
         )
 
     with Pool(processes=n_processes) as pool:

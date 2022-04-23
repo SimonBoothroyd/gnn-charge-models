@@ -22,7 +22,7 @@ ChargeCollection = Union[
 ]
 
 
-def save_parameters(
+def save_charge_model(
     output_directory: Path,
     charge_collection: ChargeCollection,
     bcc_collection: BCCCollection,
@@ -56,14 +56,14 @@ def main():
 
     # ============ Virtual sites only on pyridine ============
 
-    save_parameters(
-        output_directory=Path("sp2-pyridine-only", "no-v-sites"),
+    save_charge_model(
+        output_directory=Path("pyridine-only", "no-v-sites"),
         charge_collection=(conformer_settings, QCChargeSettings(theory="am1")),
         bcc_collection=original_am1bcc_corrections(),
         v_site_collection=VirtualSiteCollection(parameters=[]),
     )
-    save_parameters(
-        output_directory=Path("sp2-pyridine-only", "v-sites"),
+    save_charge_model(
+        output_directory=Path("pyridine-only", "v-sites"),
         charge_collection=(conformer_settings, QCChargeSettings(theory="am1")),
         bcc_collection=BCCCollection(
             parameters=[
@@ -121,14 +121,41 @@ def main():
 
     # ============ Halogens ============
 
-    save_parameters(
+    save_charge_model(
         output_directory=Path("halogens", "no-v-sites"),
         charge_collection=(conformer_settings, QCChargeSettings(theory="am1")),
         bcc_collection=original_am1bcc_corrections(),
         v_site_collection=VirtualSiteCollection(parameters=[]),
     )
-    save_parameters(
-        output_directory=Path("halogens", "v-sites"),
+    save_charge_model(
+        output_directory=Path("halogens", "v-sites-1"),
+        charge_collection=(conformer_settings, QCChargeSettings(theory="am1")),
+        bcc_collection=original_am1bcc_corrections(),
+        v_site_collection=VirtualSiteCollection(
+            parameters=[
+                BondChargeSiteParameter(
+                    smirks="[#6A:2]-[#17:1]",
+                    name="EP1",
+                    distance=1.0,
+                    charge_increments=(-0.05, 0.0),
+                    sigma=0.0,
+                    epsilon=0.0,
+                    match="all-permutations",
+                ),
+                BondChargeSiteParameter(
+                    smirks="[#6A:2]-[#35:1]",
+                    name="EP1",
+                    distance=1.0,
+                    charge_increments=(-0.05, 0.0),
+                    sigma=0.0,
+                    epsilon=0.0,
+                    match="all-permutations",
+                ),
+            ]
+        ),
+    )
+    save_charge_model(
+        output_directory=Path("halogens", "v-sites-2"),
         charge_collection=(conformer_settings, QCChargeSettings(theory="am1")),
         bcc_collection=original_am1bcc_corrections(),
         v_site_collection=VirtualSiteCollection(
