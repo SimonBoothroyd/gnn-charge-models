@@ -47,7 +47,9 @@ class ObjectiveTermCache:
 
         self._file_path = file_path
 
-        self._connection = sqlite3.connect(file_path)
+        self._connection = sqlite3.connect(
+            file_path, detect_types=sqlite3.PARSE_DECLTYPES
+        )
 
         sqlite3.register_adapter(ESPObjectiveTerm, pickle.dumps)
         sqlite3.register_converter("pickle", pickle.loads)
@@ -103,20 +105,31 @@ class ObjectiveTermCache:
 
         bindings = []
 
-        if skip is not None:
-            statement += f" offset ?"
-            bindings.append(skip)
         if limit is not None:
             statement += f" limit ?"
             bindings.append(limit)
+        if skip is not None:
+            statement += f" offset ?"
+            bindings.append(skip)
 
-        return self._connection.execute(statement, bindings).fetchall()
+        return [
+            esp_record
+            for (esp_record,) in self._connection.execute(
+                statement, bindings
+            ).fetchall()
+        ]
 
     def read(self, term_hash: str) -> Optional[ESPObjectiveTerm]:
 
-        return self._connection.execute(
-            f"select * from cache where hash=?", (term_hash,)
+        return_value = self._connection.execute(
+            f"select term from cache where hash=?", (term_hash,)
         ).fetchone()
+
+        if return_value is None:
+            return None
+
+        (esp_record,) = return_value
+        return esp_record
 
     def clear(self):
 
@@ -255,7 +268,6 @@ def generate_objective_terms(
             )
 
         cache = ObjectiveTermCache(cache_path, clear_existing=False)
-
         uncached_records = []
 
         esp_record_hashes = list(
