@@ -619,6 +619,12 @@ def main(
 
     with console.status("merging objective terms"):
         objective_term = ESPObjectiveTerm.combine(*objective_terms)
+
+        if objective_term.vsite_coord_assignment_matrix is not None:
+            objective_term.vsite_coord_assignment_matrix = (
+                objective_term.vsite_coord_assignment_matrix.astype(int, copy=False)
+            )
+
         objective_term.to_backend("torch")
 
     console.print("")
@@ -688,11 +694,11 @@ def main(
         os.path.join(output_directory, "final-parameters-base.json"), "w"
     ) as file:
         json.dump(
-            charge_collection.json(indent=2)
+            charge_collection.dict()
             if isinstance(charge_collection, LibraryChargeCollection)
             else (
-                charge_collection[0].json(indent=2),
-                charge_collection[1].json(indent=2),
+                charge_collection[0].dict(),
+                charge_collection[1].json(),
             ),
             file,
             indent=2,
