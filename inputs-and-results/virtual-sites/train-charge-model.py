@@ -4,8 +4,9 @@ import hashlib
 import json
 import os.path
 import pickle
+import sqlite3
 from multiprocessing import Pool
-from typing import Dict, List, Optional, Tuple, cast
+from typing import Dict, Iterable, List, Optional, Tuple, Union, cast
 
 import click
 import numpy
@@ -39,6 +40,101 @@ from rich.progress import track
 _CACHED_CHARGES = {}
 
 
+class ObjectiveTermCache:
+    def __init__(
+        self, file_path: Union[os.PathLike, str], clear_existing: bool = False
+    ):
+
+        self._file_path = file_path
+
+        self._connection = sqlite3.connect(file_path)
+
+        sqlite3.register_adapter(ESPObjectiveTerm, pickle.dumps)
+        sqlite3.register_converter("pickle", pickle.loads)
+
+        self._create_schema()
+
+        if clear_existing:
+            self.clear()
+
+    def __del__(self):
+
+        if self._connection is not None:
+            self._connection.close()
+
+    def _create_schema(self):
+
+        with self._connection:
+
+            self._connection.execute(
+                "create table if not exists info (version integer)"
+            )
+            db_info = self._connection.execute("select * from info").fetchall()
+
+            if len(db_info) == 0:
+                self._connection.execute("insert into info values(1)")
+            else:
+                assert len(db_info) == 1 and db_info[0] == (1,)
+
+            self._connection.execute(
+                f"create table if not exists cache "
+                f"(id integer primary key, hash text, term pickle)"
+            )
+            self._connection.execute(
+                f"create index if not exists ix_hash on cache(hash)"
+            )
+
+            self._connection.execute("pragma optimize")
+
+    def create(self, terms: Iterable[Tuple[str, ESPObjectiveTerm]]):
+
+        with self._connection:
+
+            self._connection.executemany(
+                f"insert into cache (hash, term) values (?, ?)", terms
+            )
+            self._connection.execute("pragma optimize")
+
+    def read_all(
+        self, skip: Optional[int] = None, limit: Optional[int] = None
+    ) -> List[ESPObjectiveTerm]:
+
+        statement = "select term from cache"
+
+        bindings = []
+
+        if skip is not None:
+            statement += f" offset ?"
+            bindings.append(skip)
+        if limit is not None:
+            statement += f" limit ?"
+            bindings.append(limit)
+
+        return self._connection.execute(statement, bindings).fetchall()
+
+    def read(self, term_hash: str) -> Optional[ESPObjectiveTerm]:
+
+        return self._connection.execute(
+            f"select * from cache where hash=?", (term_hash,)
+        ).fetchone()
+
+    def clear(self):
+
+        with self._connection:
+            self._connection.execute("delete from molecules")
+
+
+def hash_record(record: MoleculeESPRecord) -> str:
+    def numpy_encoder(obj):
+        if isinstance(obj, numpy.ndarray):
+            return obj.tolist()
+        return pydantic_encoder(obj)
+
+    return hashlib.sha256(
+        record.json(encoder=numpy_encoder).encode("utf-8")
+    ).hexdigest()
+
+
 def compute_base_charge(
     tagged_smiles,
     conformer_settings: ConformerSettings,
@@ -67,22 +163,29 @@ def compute_base_charge(
 
 def generate_objective_term(
     esp_record: MoleculeESPRecord,
-    conformer_settings: ConformerSettings,
-    charge_settings: QCChargeSettings,
+    charge_collection: Union[
+        LibraryChargeCollection, Tuple[ConformerSettings, QCChargeSettings]
+    ],
     bcc_collection: BCCCollection,
     bcc_parameter_keys: List[str],
     vsite_collection: VirtualSiteCollection,
     vsite_charge_parameter_keys: List[VirtualSiteChargeKey],
     vsite_coordinate_parameter_keys: List[VirtualSiteGeometryKey],
-) -> ESPObjectiveTerm:
+) -> Tuple[str, ESPObjectiveTerm]:
 
     with capture_toolkit_warnings():
 
+        charge_collection = (
+            charge_collection
+            if isinstance(charge_collection, LibraryChargeCollection)
+            else compute_base_charge(
+                esp_record.tagged_smiles, charge_collection[0], charge_collection[1]
+            )
+        )
+
         objective_term_generator = ESPObjective.compute_objective_terms(
             esp_records=[esp_record],
-            charge_collection=compute_base_charge(
-                esp_record.tagged_smiles, conformer_settings, charge_settings
-            ),
+            charge_collection=charge_collection,
             charge_parameter_keys=[],
             bcc_collection=bcc_collection,
             bcc_parameter_keys=bcc_parameter_keys,
@@ -100,13 +203,18 @@ def generate_objective_term(
                 else vsite_coordinate_parameter_keys
             ),
         )
-        return cast(ESPObjectiveTerm, list(objective_term_generator)[0])
+
+        return (
+            hash_record(esp_record),
+            cast(ESPObjectiveTerm, list(objective_term_generator)[0]),
+        )
 
 
 def generate_objective_terms(
     esp_records: List[MoleculeESPRecord],
-    conformer_settings: ConformerSettings,
-    charge_settings: QCChargeSettings,
+    charge_collection: Union[
+        LibraryChargeCollection, Tuple[ConformerSettings, QCChargeSettings]
+    ],
     bcc_collection: BCCCollection,
     bcc_parameter_keys: List[str],
     vsite_collection: VirtualSiteCollection,
@@ -114,70 +222,88 @@ def generate_objective_terms(
     vsite_coordinate_parameter_keys: List[VirtualSiteGeometryKey],
     cache_directory: str,
     n_processes: int,
-):
+) -> ObjectiveTermCache:
 
     console = rich.get_console()
 
-    def numpy_encoder(obj):
-        if isinstance(obj, numpy.ndarray):
-            return obj.tolist()
-        return pydantic_encoder(obj)
-
-    with console.status("hashing objective term inputs"):
-
-        cache_hash_input = json.dumps(
-            [
-                [esp_record.json(encoder=numpy_encoder) for esp_record in esp_records],
-                conformer_settings.json(),
-                charge_settings.json(),
-                bcc_collection.json(),
-                bcc_parameter_keys,
-                vsite_collection.json(),
-                vsite_charge_parameter_keys,
-                vsite_coordinate_parameter_keys,
-            ],
-            sort_keys=True,
-        )
-
-    cache_hash = hashlib.sha256(cache_hash_input.encode("utf-8")).hexdigest()
-    cache_path = os.path.join(cache_directory, f"train-objective-{cache_hash}.pkl")
-
-    if os.path.isfile(cache_path):
-
-        with console.status("loading cached objective terms"):
-
-            with open(cache_path, "rb") as file:
-                objective_terms = pickle.load(file)
-                console.print(f"loaded cached objective terms from {cache_path}")
-                return objective_terms
-
     with Pool(processes=n_processes) as pool:
 
-        objective_terms = list(
+        with console.status("creating objective cache hash"):
+
+            cache_hash_input = json.dumps(
+                [
+                    charge_collection.json()
+                    if isinstance(charge_collection, LibraryChargeCollection)
+                    else (charge_collection[0].json(), charge_collection[1].json()),
+                    bcc_collection.json(),
+                    bcc_parameter_keys,
+                    vsite_collection.json(),
+                    vsite_charge_parameter_keys,
+                    vsite_coordinate_parameter_keys,
+                ],
+                sort_keys=True,
+            )
+
+        cache_hash = hashlib.sha256(cache_hash_input.encode("utf-8")).hexdigest()
+        cache_path = os.path.join(
+            cache_directory, f"train-objective-{cache_hash}.sqlite"
+        )
+
+        if not os.path.isfile(cache_path):
+            console.print(
+                f"creating cache at [repr.filename]{cache_path}[/repr.filename]"
+            )
+
+        cache = ObjectiveTermCache(cache_path, clear_existing=False)
+
+        uncached_records = []
+
+        esp_record_hashes = list(
+            track(
+                pool.imap(hash_record, esp_records),
+                "hashing ESP records",
+                total=len(esp_records),
+            )
+        )
+
+        for esp_record_hash, esp_record in track(
+            zip(esp_record_hashes, esp_records),
+            "reading records from cache",
+            total=len(esp_records),
+        ):
+
+            cached_term = cache.read(esp_record_hash)
+
+            if cached_term is None:
+                uncached_records.append(esp_record)
+                continue
+
+        for i, (term_hash, term) in enumerate(
             track(
                 pool.imap(
                     functools.partial(
                         generate_objective_term,
-                        conformer_settings=conformer_settings,
-                        charge_settings=charge_settings,
+                        charge_collection=charge_collection,
                         bcc_collection=bcc_collection,
                         bcc_parameter_keys=bcc_parameter_keys,
                         vsite_collection=vsite_collection,
                         vsite_charge_parameter_keys=vsite_charge_parameter_keys,
                         vsite_coordinate_parameter_keys=vsite_coordinate_parameter_keys,
                     ),
-                    esp_records,
+                    uncached_records,
                 ),
-                total=len(esp_records),
+                total=len(uncached_records),
                 description="building objective terms",
                 transient=True,
             )
-        )
+        ):
 
-    with open(cache_path, "wb") as file:
-        pickle.dump(objective_terms, file)
+            if i % 1000 == 0:
+                console.print(f"generated {i} / {len(uncached_records)}")
 
-    return objective_terms
+            cache.create([(term_hash, term)])
+
+    return cache
 
 
 def vectorize_collections(
@@ -388,16 +514,24 @@ def main(
     console.rule("model parameters")
     console.print("")
 
-    conformer_settings, charge_settings = parse_file_as(
-        Tuple[ConformerSettings, QCChargeSettings],
-        os.path.join(input_parameter_directory, "initial-parameters-base.json"),
-    )
-    bcc_collection = BCCCollection.parse_file(
-        os.path.join(input_parameter_directory, "initial-parameters-bcc.json")
-    )
-    vsite_collection = VirtualSiteCollection.parse_file(
-        os.path.join(input_parameter_directory, "initial-parameters-v-site.json")
-    )
+    with capture_toolkit_warnings():
+
+        with console.status("loading model parameters"):
+
+            charge_collection = parse_file_as(
+                Union[
+                    LibraryChargeCollection, Tuple[ConformerSettings, QCChargeSettings]
+                ],
+                os.path.join(input_parameter_directory, "initial-parameters-base.json"),
+            )
+            bcc_collection = BCCCollection.parse_file(
+                os.path.join(input_parameter_directory, "initial-parameters-bcc.json")
+            )
+            vsite_collection = VirtualSiteCollection.parse_file(
+                os.path.join(
+                    input_parameter_directory, "initial-parameters-v-site.json"
+                )
+            )
 
     # Determine which parameters will be trained
     with open(input_coverage_path, "r") as file:
@@ -456,10 +590,9 @@ def main(
 
     # Compute the terms that will appear in the loss function and merge them together
     # for improved performance and convenience
-    objective_terms_train = generate_objective_terms(
+    objective_term_cache = generate_objective_terms(
         esp_records_train,
-        conformer_settings,
-        charge_settings,
+        charge_collection,
         bcc_collection,
         bcc_parameter_keys,
         vsite_collection,
@@ -468,14 +601,13 @@ def main(
         input_parameter_directory,
         n_processes,
     )
+    objective_terms = objective_term_cache.read_all()
 
-    console.print(
-        f"the objective function is the sum of {len(objective_terms_train)} terms"
-    )
+    console.print(f"the objective function is the sum of {len(objective_terms)} terms")
 
     with console.status("merging objective terms"):
-        objective_term_train = ESPObjectiveTerm.combine(*objective_terms_train)
-        objective_term_train.to_backend("torch")
+        objective_term = ESPObjectiveTerm.combine(*objective_terms)
+        objective_term.to_backend("torch")
 
     console.print("")
     console.rule("training")
@@ -501,9 +633,7 @@ def main(
 
     for epoch in track(list(range(n_epochs + 1)), description="training"):
 
-        loss = objective_term_train.loss(
-            current_charge_increments, current_vsite_coordinates
-        )
+        loss = objective_term.loss(current_charge_increments, current_vsite_coordinates)
         losses.append(float(loss.detach().numpy()))
 
         if current_vsite_coordinates is not None:
@@ -545,7 +675,13 @@ def main(
     with open(
         os.path.join(output_directory, "final-parameters-base.json"), "w"
     ) as file:
-        json.dump((conformer_settings.dict(), charge_settings.dict()), file, indent=2)
+        json.dump(
+            charge_collection.json
+            if isinstance(charge_collection, LibraryChargeCollection)
+            else (charge_collection[0].json, charge_collection[1].json),
+            file,
+            indent=2,
+        )
 
     with open(os.path.join(output_directory, "final-parameters-bcc.json"), "w") as file:
         file.write(final_bcc_collection.json(indent=2))

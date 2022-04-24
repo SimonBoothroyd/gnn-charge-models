@@ -117,6 +117,13 @@ def process_molecule(
     required=True,
 )
 @click.option(
+    "--filter-by-v-site/--no-filter-by-v-site",
+    "filter_by_v_site",
+    type=bool,
+    default=True,
+    show_default=True,
+)
+@click.option(
     "--n-processes",
     help="The number of processes to parallelize the selection across.",
     type=int,
@@ -128,6 +135,7 @@ def main(
     coverage_path,
     bcc_collection_path,
     vsite_collection_path,
+    filter_by_v_site,
     n_processes,
 ):
 
@@ -205,7 +213,7 @@ def main(
             bcc_keys,
         ) = processed_molecule
 
-        if not has_vsite_params:
+        if filter_by_v_site and not has_vsite_params:
             n_without_vsite_params += 1
             continue
         if is_missing_bcc_params:
@@ -219,10 +227,11 @@ def main(
         for bcc_key in bcc_keys:
             coverage["bcc"][bcc_key] += 1
 
-    console.print(
-        f"{n_without_vsite_params} records would not be assigned v-sites and were "
-        f"removed"
-    )
+    if filter_by_v_site:
+        console.print(
+            f"{n_without_vsite_params} records would not be assigned v-sites and were "
+            f"removed"
+        )
     console.print(
         f"{n_missing_bcc_params} records could not be fully assigned BCC parameters "
         f"and were removed"
