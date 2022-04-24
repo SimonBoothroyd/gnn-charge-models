@@ -688,9 +688,12 @@ def main(
         os.path.join(output_directory, "final-parameters-base.json"), "w"
     ) as file:
         json.dump(
-            charge_collection.json
+            charge_collection.json(indent=2)
             if isinstance(charge_collection, LibraryChargeCollection)
-            else (charge_collection[0].json, charge_collection[1].json),
+            else (
+                charge_collection[0].json(indent=2),
+                charge_collection[1].json(indent=2),
+            ),
             file,
             indent=2,
         )
