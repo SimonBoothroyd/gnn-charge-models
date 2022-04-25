@@ -35,16 +35,17 @@ dependencies:
   - qcengine
   - msgpack-python  # needed for qcengine
   - geometric
+#  - xtb-python  # if not on OSX.
 
     # Distributed molecule processing / labelling.
   - distributed
   - dask-jobqueue
 
-    # Train / test
+    # Train / test remainder of FF
   - openff-evaluator-base
   - nonbonded
-#  - absolv
-#  - openmmtools
+  - absolv-base
+  - openmmtools
 
   # Common dependencies
   - tqdm

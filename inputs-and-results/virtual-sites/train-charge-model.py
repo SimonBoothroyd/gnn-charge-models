@@ -79,11 +79,11 @@ class ObjectiveTermCache:
                 assert len(db_info) == 1 and db_info[0] == (1,)
 
             self._connection.execute(
-                f"create table if not exists cache "
-                f"(id integer primary key, hash text, term pickle)"
+                "create table if not exists cache "
+                "(id integer primary key, hash text, term pickle)"
             )
             self._connection.execute(
-                f"create index if not exists ix_hash on cache(hash)"
+                "create index if not exists ix_hash on cache(hash)"
             )
 
             self._connection.execute("pragma optimize")
@@ -93,7 +93,7 @@ class ObjectiveTermCache:
         with self._connection:
 
             self._connection.executemany(
-                f"insert into cache (hash, term) values (?, ?)", terms
+                "insert into cache (hash, term) values (?, ?)", terms
             )
             self._connection.execute("pragma optimize")
 
@@ -106,10 +106,10 @@ class ObjectiveTermCache:
         bindings = []
 
         if limit is not None:
-            statement += f" limit ?"
+            statement += " limit ?"
             bindings.append(limit)
         if skip is not None:
-            statement += f" offset ?"
+            statement += " offset ?"
             bindings.append(skip)
 
         return [
@@ -122,7 +122,7 @@ class ObjectiveTermCache:
     def read(self, term_hash: str) -> Optional[ESPObjectiveTerm]:
 
         return_value = self._connection.execute(
-            f"select term from cache where hash=?", (term_hash,)
+            "select term from cache where hash=?", (term_hash,)
         ).fetchone()
 
         if return_value is None:
@@ -698,7 +698,7 @@ def main(
             if isinstance(charge_collection, LibraryChargeCollection)
             else (
                 charge_collection[0].dict(),
-                charge_collection[1].json(),
+                charge_collection[1].dict(),
             ),
             file,
             indent=2,

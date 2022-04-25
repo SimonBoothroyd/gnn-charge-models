@@ -185,7 +185,7 @@ def main(
     learning_rate,
     n_epochs,
     seed,
-    output_directory
+    output_directory,
 ):
 
     cli_inputs = locals()

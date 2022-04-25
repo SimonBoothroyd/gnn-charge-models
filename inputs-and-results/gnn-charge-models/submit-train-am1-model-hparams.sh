@@ -46,9 +46,9 @@ export indices=( $(
 echo "MATRIX INDICES=${indices[*]}"
 
 python train-gnn-charge-model.py \
-    --train-set             "../data-set-labelling/am1-charges/chg-enamine-50240.sqlite" \
+    --train-set             "../../data-set-labelling/am1-charges/chg-enamine-50240.sqlite" \
     --train-batch-size      ${batch_size[${indices[0]}]} \
-    --val-set               "../data-set-labelling/am1-charges/chg-OpenFF-Industry-Benchmark-Season-1-v1-1.sqlite" \
+    --val-set               "../../data-set-labelling/am1-charges/chg-OpenFF-Industry-Benchmark-Season-1-v1-1.sqlite" \
     --charge-method         "am1" \
     --n-gcn-layers          ${n_gcn_layers[${indices[1]}]} \
     --n-gcn-hidden-features ${n_gcn_hidden_features[${indices[2]}]} \

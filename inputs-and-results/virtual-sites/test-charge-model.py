@@ -82,6 +82,8 @@ def compute_test_molecule_rmse(
 
         atom_charges = LibraryChargeGenerator.generate(molecule, charge_collection)
 
+        n_vsites = 0
+
         if len(bcc_collection.parameters) > 0:
             atom_charges += BCCGenerator.generate(molecule, bcc_collection)
 
@@ -113,7 +115,7 @@ def compute_test_molecule_rmse(
 
             [esp_conformer] = extract_conformers(esp_molecule)
 
-            if len(vsite_collection.parameters) > 0:
+            if n_vsites > 0:
                 vsite_coordinates = VirtualSiteGenerator.generate_positions(
                     esp_molecule, vsite_collection, esp_conformer
                 )
