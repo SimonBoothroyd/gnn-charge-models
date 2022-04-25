@@ -15,7 +15,9 @@ This repository is structured into four main directories:
 
 * `data-set-labelling` - contains the script used to generate labels for the train and test sets.
 
-* `inputs-and-results` - contains the input files required to reproduce this study.
+* `train-charge-models` - contains the input files required to train the new charge models.
+
+* `train-ff-terms` - contains the input files required to train the remaining force field terms using the new charge models.
 
 * `trained-models` - contains the trained models produced by this study. 
 
