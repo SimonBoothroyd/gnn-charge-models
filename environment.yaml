@@ -42,7 +42,8 @@ dependencies:
   - dask-jobqueue
 
     # Train / test remainder of FF
-  - openff-evaluator-base
+  - openff-evaluator-base >=0.3.11
+  - openff-bespokefit
   - nonbonded
   - absolv-base
   - openmmtools
