@@ -26,7 +26,7 @@ dependencies:
 
     # Molecule loading, processing and labelling.
   - openff-toolkit-base >=0.10.5
-  - openff-recharge >=0.2.2  # (r)esp / electric field
+  - openff-recharge >=0.3.4  # (r)esp / electric field
   - openeye-toolkits
   - rdkit
   - psi4 >=1.5
