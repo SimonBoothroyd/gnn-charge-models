@@ -122,8 +122,7 @@ class PartialChargeModelV1(DGLMoleculeLightningModel):
 
         self.partial_charge_method = partial_charge_method
 
-        atom_features, _ = self.features()
-        n_atom_features = sum(len(feature) for feature in atom_features)
+        n_atom_features = sum(len(feature) for feature in self.features()[0])
 
         super(PartialChargeModelV1, self).__init__(
             convolution_module=ConvolutionModule(

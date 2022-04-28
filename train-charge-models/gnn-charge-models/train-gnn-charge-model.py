@@ -183,7 +183,10 @@ def main(
     console.print(NewLine())
     console.rule("model")
     console.print(NewLine())
+    console.print(model.hparams)
+    console.print(NewLine())
     console.print(model)
+    console.print(NewLine())
 
     console.print(NewLine())
     console.rule("training")
