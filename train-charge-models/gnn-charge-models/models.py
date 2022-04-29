@@ -10,6 +10,7 @@ from nagl.features import (
     BondIsInRing,
 )
 from nagl.lightning import DGLMoleculeLightningModel
+from nagl.molecules import DGLMolecule
 from nagl.nn import SequentialLayers
 from nagl.nn.modules import ConvolutionModule, ReadoutModule
 from nagl.nn.pooling import PoolAtomFeatures
@@ -122,6 +123,8 @@ class PartialChargeModelV1(DGLMoleculeLightningModel):
 
         self.partial_charge_method = partial_charge_method
 
+        self._charge_readout = f"{partial_charge_method}-charges"
+
         n_atom_features = sum(len(feature) for feature in self.features()[0])
 
         super(PartialChargeModelV1, self).__init__(
@@ -131,7 +134,7 @@ class PartialChargeModelV1(DGLMoleculeLightningModel):
                 hidden_feats=[n_gcn_hidden_features] * n_gcn_layers,
             ),
             readout_modules={
-                f"{partial_charge_method}-charges": ReadoutModule(
+                self._charge_readout: ReadoutModule(
                     pooling_layer=PoolAtomFeatures(),
                     readout_layers=SequentialLayers(
                         in_feats=n_gcn_hidden_features,
@@ -145,3 +148,10 @@ class PartialChargeModelV1(DGLMoleculeLightningModel):
         )
 
         self.save_hyperparameters()
+
+    def compute_charges(self, molecule: Molecule) -> torch.Tensor:
+
+        atom_features, bond_features = self.features()
+        dgl_molecule = DGLMolecule.from_openff(molecule, atom_features, bond_features)
+
+        return self.forward(dgl_molecule)[self._charge_readout]

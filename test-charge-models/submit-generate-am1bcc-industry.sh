@@ -17,12 +17,12 @@
 . ~/.bashrc
 
 conda activate gnn-charge-models
-conda env export > "extract-am1-charges.yml"
+conda env export > "extract-am1bcc-charges.yml"
 
 mkdir reference-charges
 
 python generate-reference-charges-base.py \
-    --input  "../../data-set-labelling/qc-esp/esp-records-industry-set.pkl" \
+    --input  "../data-set-labelling/qc-esp/esp-records-industry-set.pkl" \
     --output "reference-charges/am1bcc-charge-industry-set.json" \
     --method "am1bcc" \
     --n-processes 40

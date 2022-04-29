@@ -19,8 +19,8 @@
 conda activate gnn-charge-models
 conda env export > "test-am1bcc-env.yml"
 
-python ../test-charge-model.py                              \
+python ../../../test-charge-models/test-charge-model.py \
     --input-esp-records         "test-esp-records.pkl"      \
-    --input-parameters-base     "../reference-charges/am1bcc-charge-industry-set.json"   \
+    --input-parameters-base     "../../../test-charge-models/reference-charges/am1bcc-charge-industry-set.json"   \
     --output                    "test-per-molecule-rmse-am1bcc.json"  \
     --n-loader-processes        40

@@ -33,7 +33,7 @@ python ../train-charge-model.py                                    \
     --n-epochs                  $N_EPOCHS                          \
     --n-loader-processes        24
 
-python ../test-charge-model.py                              \
+python ../../../test-charge-models/test-charge-model.py \
     --input-esp-records         "test-esp-records.pkl"     \
     --input-parameters-base     "$OUTPUT_DIR/final-parameters-base.json"   \
     --input-parameters-bcc      "$OUTPUT_DIR/final-parameters-bcc.json"    \

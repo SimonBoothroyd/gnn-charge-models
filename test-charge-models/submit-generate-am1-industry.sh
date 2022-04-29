@@ -22,7 +22,7 @@ conda env export > "extract-am1-charges.yml"
 mkdir reference-charges
 
 python generate-reference-charges-base.py \
-    --input  "../../data-set-labelling/qc-esp/esp-records-industry-set.pkl" \
+    --input  "../data-set-labelling/qc-esp/esp-records-industry-set.pkl" \
     --output "reference-charges/am1-charge-industry-set.json" \
     --method "am1" \
     --n-processes 40

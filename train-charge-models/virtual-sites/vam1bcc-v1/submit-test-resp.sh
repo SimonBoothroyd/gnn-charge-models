@@ -19,8 +19,8 @@
 conda activate gnn-charge-models
 conda env export > "test-resp-env.yml"
 
-python ../test-charge-model.py                              \
+python ../../../test-charge-models/test-charge-model.py \
     --input-esp-records         "test-esp-records.pkl"      \
-    --input-parameters-base     "../reference-charges/resp-charges-industry-set.json"   \
+    --input-parameters-base     "../../../test-charge-models/reference-charges/resp-charges-industry-set.json"   \
     --output                    "test-per-molecule-rmse-resp.json"  \
     --n-loader-processes        40
