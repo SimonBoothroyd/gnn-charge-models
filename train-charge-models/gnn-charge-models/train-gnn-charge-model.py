@@ -7,6 +7,8 @@ import pytorch_lightning as pl
 import rich
 import torch
 from click_option_group import optgroup
+from pytorch_lightning.callbacks import ModelCheckpoint
+
 from models import PartialChargeModelV1
 from nagl.lightning import DGLMoleculeDataModule
 from pytorch_lightning.loggers import TensorBoardLogger
@@ -206,10 +208,16 @@ def main(
     )
 
     os.makedirs(output_directory, exist_ok=True)
-    logger = TensorBoardLogger(output_directory, version=version_string)
+    logger = TensorBoardLogger(output_directory, name="default", version=version_string)
+
+    checkpoint_callback = ModelCheckpoint(save_top_k=3, monitor="val_loss")
 
     trainer = pl.Trainer(
-        gpus=n_gpus, min_epochs=n_epochs, max_epochs=n_epochs, logger=logger
+        gpus=n_gpus,
+        min_epochs=n_epochs,
+        max_epochs=n_epochs,
+        logger=logger,
+        callbacks=[checkpoint_callback]
     )
 
     trainer.fit(model, datamodule=data_module)
