@@ -12,7 +12,7 @@
 #BSUB -q gpuqueue
 #BSUB -gpu num=1:j_exclusive=yes:mode=shared:mps=no:
 #
-#BSUB -M 5
+#BSUB -M 16
 
 # Enable conda
 . ~/.bashrc
