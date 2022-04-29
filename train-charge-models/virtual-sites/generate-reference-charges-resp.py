@@ -1,3 +1,5 @@
+import os
+
 import rich
 from nagl.storage import MoleculeStore
 from nagl.utilities.toolkits import capture_toolkit_warnings
@@ -33,6 +35,8 @@ def main():
                     for molecule_record in molecule_records
                 ]
             )
+
+    os.makedirs("reference-charges", exist_ok=True)
 
     with open("reference-charges/resp-charges-industry-set.json", "w") as file:
         file.write(charge_collection.json(indent=2))

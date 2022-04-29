@@ -10,14 +10,19 @@ from openff.units import unit
 @click.command()
 @click.option(
     "--input",
-    "input_paths",
+    "input_tuples",
     type=(str, click.Path(exists=True, file_okay=True, dir_okay=False)),
     multiple=True,
 )
 @click.option(
+    "--reference",
+    "reference_tuple",
+    type=(str, click.Path(exists=True, file_okay=True, dir_okay=False)),
+)
+@click.option(
     "--output",
     "output_path",
-    type=(str, click.Path(exists=False, file_okay=True, dir_okay=False)),
+    type=click.Path(exists=False, file_okay=True, dir_okay=False),
     required=False,
 )
 @click.option(
@@ -27,20 +32,32 @@ from openff.units import unit
     default=True,
     show_default=True,
 )
-def main(input_paths, output_path, show_plot):
+def main(input_tuples, reference_tuple, output_path, show_plot):
 
     plot_data_rows = []
+    reference_data, reference_label = None, None
 
-    with open("no-v-sites/lr-0.0025-n-400/test-per-molecule-rmse.json") as file:
-        reference = json.load(file)
+    if reference_tuple is not None:
+        reference_label, reference_path = reference_tuple
 
-    for label, input_path in input_paths:
+        with open(reference_path) as file:
+            reference_data = json.load(file)
+
+    x_label = (
+        "RMSE (kcal / mol)"
+        if reference_data is None
+        else f"RMSE - RMSE$_{{{reference_label}}}$ (kcal / mol)"
+    )
+
+    for label, input_path in input_tuples:
 
         with open(input_path) as file:
             per_molecule_rmse = json.load(file)
 
-        for s in per_molecule_rmse:
-            per_molecule_rmse[s] -= reference[s]
+        if reference_data is not None:
+
+            for smiles in per_molecule_rmse:
+                per_molecule_rmse[smiles] -= reference_data[smiles]
 
         for smiles, rmse in per_molecule_rmse.items():
 
@@ -50,7 +67,7 @@ def main(input_paths, output_path, show_plot):
 
             plot_data_rows.append(
                 {
-                    "RMSE (kcal / mol)": rmse * conversion,
+                    x_label: rmse * conversion,
                     "SMILES": smiles,
                     "label": label,
                 }
@@ -58,7 +75,7 @@ def main(input_paths, output_path, show_plot):
 
     plot_data = pandas.DataFrame(plot_data_rows)
 
-    seaborn.histplot(plot_data, x="RMSE (kcal / mol)", hue="label", element="step")
+    seaborn.histplot(plot_data, x=x_label, hue="label", element="step")
 
     if output_path is not None:
         pyplot.tight_layout()
