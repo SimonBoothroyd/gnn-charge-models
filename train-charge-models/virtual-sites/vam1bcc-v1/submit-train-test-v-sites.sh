@@ -36,7 +36,7 @@ BR_PENALTY_WIDTH=$(echo "print($BR_RADII - 2 * $PENALTY_PADDING)" | python)
 
 OUTPUT_DIR="v-sites/lr-$LEARNING_RATE-n-$N_EPOCHS-rad-1.0-str-$PENALTY_STRENGTH-pad-$PENALTY_PADDING"
 
-python ../train-charge-model.py                                    \
+python ../../train-charge-model.py                                    \
     --input-esp-records         "train-esp-records.pkl"            \
     --input-parameter-coverage  "train-coverage.json"              \
     --input-parameters          "v-sites"                          \

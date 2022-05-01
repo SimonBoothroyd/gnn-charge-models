@@ -24,7 +24,7 @@ N_EPOCHS=400
 
 OUTPUT_DIR="no-v-sites/lr-$LEARNING_RATE-n-$N_EPOCHS"
 
-python ../train-charge-model.py                                    \
+python ../../train-charge-model.py                                    \
     --input-esp-records         "train-esp-records.pkl"            \
     --input-parameter-coverage  "train-coverage.json"              \
     --input-parameters          "no-v-sites"                       \
