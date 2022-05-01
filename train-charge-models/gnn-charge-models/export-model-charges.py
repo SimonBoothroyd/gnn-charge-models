@@ -8,6 +8,7 @@ import numpy
 import rich
 import rich.console
 import torch
+from models import PartialChargeModelV1
 from nagl.utilities.toolkits import capture_toolkit_warnings
 from openff.recharge.charges.library import (
     LibraryChargeCollection,
@@ -18,8 +19,6 @@ from openff.toolkit.topology import Molecule
 from rich import pretty
 from rich.progress import track
 
-from models import PartialChargeModelV1
-
 
 @functools.lru_cache()
 def strip_map_indices(smiles: str) -> str:
@@ -29,8 +28,7 @@ def strip_map_indices(smiles: str) -> str:
 
 
 def to_library_parameter(
-    smiles: str,
-    model_path: str
+    smiles: str, model_path: str
 ) -> Optional[LibraryChargeParameter]:
 
     from simtk import unit as simtk_unit
@@ -46,7 +44,7 @@ def to_library_parameter(
             molecule = Molecule.from_smiles(smiles, allow_undefined_stereo=True)
 
             model = PartialChargeModelV1.load_from_checkpoint(
-                model_path, map_location=torch.device('cpu')
+                model_path, map_location=torch.device("cpu")
             )
             charge_tensor = model.compute_charges(molecule).detach().numpy()
             charges = [float(x) for x in charge_tensor.flatten().tolist()]
@@ -62,15 +60,12 @@ def to_library_parameter(
             # Fix the summed charge not being within a strict precision of the total
             # charge
             charges = [
-                charge + charge_difference / molecule.n_atoms
-                for charge in charges
+                charge + charge_difference / molecule.n_atoms for charge in charges
             ]
 
             smiles = molecule.to_smiles(mapped=True)
 
-            return LibraryChargeParameter(
-                smiles=smiles, value=charges
-            )
+            return LibraryChargeParameter(smiles=smiles, value=charges)
 
     except BaseException:
         error_console.print_exception()

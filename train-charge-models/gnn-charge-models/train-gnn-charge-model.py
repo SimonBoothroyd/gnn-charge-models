@@ -7,10 +7,9 @@ import pytorch_lightning as pl
 import rich
 import torch
 from click_option_group import optgroup
-from pytorch_lightning.callbacks import ModelCheckpoint, TQDMProgressBar
-
 from models import PartialChargeModelV1
 from nagl.lightning import DGLMoleculeDataModule
+from pytorch_lightning.callbacks import ModelCheckpoint, TQDMProgressBar
 from pytorch_lightning.loggers import TensorBoardLogger
 from rich import pretty
 from rich.console import NewLine
@@ -217,8 +216,8 @@ def main(
         logger=logger,
         callbacks=[
             ModelCheckpoint(save_top_k=3, monitor="val_loss"),
-            TQDMProgressBar()
-        ]
+            TQDMProgressBar(),
+        ],
     )
 
     trainer.fit(model, datamodule=data_module)

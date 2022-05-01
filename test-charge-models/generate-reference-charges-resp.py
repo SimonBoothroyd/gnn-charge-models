@@ -38,8 +38,7 @@ def main():
 
     os.makedirs("reference-charges", exist_ok=True)
 
-    with open(
-            "reference-charges/resp-charges-industry-set.json", "w") as file:
+    with open("reference-charges/resp-charges-industry-set.json", "w") as file:
         file.write(charge_collection.json(indent=2))
 
 
