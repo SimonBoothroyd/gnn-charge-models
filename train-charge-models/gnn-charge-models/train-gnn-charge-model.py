@@ -1,6 +1,9 @@
+import hashlib
+import json
 import os.path
 import pickle
 from pprint import pprint
+from typing import Optional
 
 import click
 import pytorch_lightning as pl
@@ -13,6 +16,20 @@ from pytorch_lightning.callbacks import ModelCheckpoint, TQDMProgressBar
 from pytorch_lightning.loggers import TensorBoardLogger
 from rich import pretty
 from rich.console import NewLine
+
+
+def hash_file(file_path: Optional[str]) -> str:
+
+    if file_path is None:
+        return ""
+
+    sha256_hash = hashlib.sha256()
+
+    with open(file_path, "rb") as file:
+        for byte_block in iter(lambda: file.read(4096), b""):
+            sha256_hash.update(byte_block)
+
+    return sha256_hash.hexdigest()
 
 
 @optgroup.group("Training set")
@@ -145,20 +162,23 @@ def main(
         pl.seed_everything(seed)
 
     # Define the model.
+    atom_feature_types = [
+        "AtomicElement",
+        "AtomConnectivity",
+        "AtomAverageFormalCharge",
+        "AtomIsInRing",
+    ]
+    bond_feature_types = [
+        "BondIsInRing",
+    ]
+
     model = PartialChargeModelV1(
         n_gcn_hidden_features,
         n_gcn_layers,
         n_am1_hidden_features,
         n_am1_layers,
-        atom_features=[
-            "AtomicElement",
-            "AtomConnectivity",
-            "AtomAverageFormalCharge",
-            "AtomIsInRing",
-        ],
-        bond_features=[
-            "BondIsInRing",
-        ],
+        atom_features=atom_feature_types,
+        bond_features=bond_feature_types,
         learning_rate=learning_rate,
         partial_charge_method=partial_charge_method,
     )
@@ -167,6 +187,25 @@ def main(
 
     # Load in the pre-processed training and test molecules and store them in
     # featurized graphs.
+    with console.status("hashing inputs"):
+
+        cache_hash = hashlib.sha256(
+            json.dumps(
+                dict(
+                    atom_feature_types=atom_feature_types,
+                    bond_feature_types=bond_feature_types,
+                    partial_charge_method=partial_charge_method,
+                    train_set_hash=hash_file(train_set_path),
+                    train_batch_size=train_batch_size,
+                    val_set_hash=hash_file(val_set_path),
+                    val_batch_size=None,
+                    test_set_hash=hash_file(test_set_path),
+                    test_batch_size=None,
+                ),
+                sort_keys=True,
+            )
+        ).hexdigest()
+
     data_module = DGLMoleculeDataModule(
         atom_features,
         bond_features,
@@ -179,6 +218,7 @@ def main(
         test_set_path=test_set_path,
         test_batch_size=None,
         use_cached_data=True,
+        output_path=f"nagl-data-module-{cache_hash}.pkl",
     )
 
     console.print(NewLine())
