@@ -152,32 +152,56 @@ def compute_base_charge(
     tagged_smiles,
     conformer_settings: ConformerSettings,
     charge_settings: QCChargeSettings,
-):
+) -> LibraryChargeParameter:
 
-    if tagged_smiles in _CACHED_CHARGES:
-        return _CACHED_CHARGES[tagged_smiles]
+    if tagged_smiles not in _CACHED_CHARGES:
 
-    molecule = Molecule.from_mapped_smiles(tagged_smiles, allow_undefined_stereo=True)
+        molecule = Molecule.from_mapped_smiles(
+            tagged_smiles, allow_undefined_stereo=True
+        )
 
-    conformers = ConformerGenerator.generate(molecule, conformer_settings)
-    charges = QCChargeGenerator.generate(molecule, conformers, charge_settings)
+        conformers = ConformerGenerator.generate(molecule, conformer_settings)
+        charges = QCChargeGenerator.generate(molecule, conformers, charge_settings)
 
-    charge_collection = LibraryChargeCollection(
-        parameters=[
-            LibraryChargeParameter(
-                smiles=tagged_smiles,
-                value=[float(v) for v in charges.flatten().tolist()],
-            )
-        ]
+        _CACHED_CHARGES[tagged_smiles] = LibraryChargeParameter(
+            smiles=tagged_smiles,
+            value=[float(v) for v in charges.flatten().tolist()],
+        )
+
+    return _CACHED_CHARGES[tagged_smiles]
+
+
+def library_charge_to_smiles(
+    parameter: LibraryChargeParameter,
+) -> Tuple[str, LibraryChargeParameter]:
+
+    return (
+        Molecule.from_smiles(parameter.smiles, allow_undefined_stereo=True).to_smiles(
+            mapped=False
+        ),
+        parameter,
     )
-    _CACHED_CHARGES[tagged_smiles] = charge_collection
-    return charge_collection
+
+
+def library_charges_to_dict(
+    charge_collection: LibraryChargeCollection, pool: Pool
+) -> Dict[str, LibraryChargeParameter]:
+
+    return_value = dict(
+        track(
+            pool.imap(library_charge_to_smiles, charge_collection.parameters),
+            total=len(charge_collection.parameters),
+            description="processing library charge collection",
+        )
+    )
+    assert len(return_value) == len(charge_collection.parameters)
+    return return_value
 
 
 def generate_objective_term(
     esp_record: MoleculeESPRecord,
     charge_collection: Union[
-        LibraryChargeCollection, Tuple[ConformerSettings, QCChargeSettings]
+        Dict[str, LibraryChargeParameter], Tuple[ConformerSettings, QCChargeSettings]
     ],
     bcc_collection: BCCCollection,
     bcc_parameter_keys: List[str],
@@ -188,17 +212,25 @@ def generate_objective_term(
 
     with capture_toolkit_warnings():
 
-        charge_collection = (
-            charge_collection
-            if isinstance(charge_collection, LibraryChargeCollection)
-            else compute_base_charge(
+        if isinstance(charge_collection, dict):
+            record_smiles = Molecule.from_smiles(
+                esp_record.tagged_smiles, allow_undefined_stereo=True
+            ).to_smiles(mapped=False)
+            charge_parameter = charge_collection[record_smiles]
+        else:
+            charge_parameter = compute_base_charge(
                 esp_record.tagged_smiles, charge_collection[0], charge_collection[1]
             )
+
+        # Matching a full charge collection is waaaaaay toooooo sllllooooooowwwwwwww
+        # so we create a subset for faster matching. Upstream fixes needed....
+        charge_collection_subset = LibraryChargeCollection(
+            parameters=[charge_parameter]
         )
 
         objective_term_generator = ESPObjective.compute_objective_terms(
             esp_records=[esp_record],
-            charge_collection=charge_collection,
+            charge_collection=charge_collection_subset,
             charge_parameter_keys=[],
             bcc_collection=bcc_collection,
             bcc_parameter_keys=bcc_parameter_keys,
@@ -290,12 +322,18 @@ def generate_objective_terms(
                 uncached_records.append(esp_record)
                 continue
 
+        processed_charge_collection = (
+            library_charges_to_dict(charge_collection, pool)
+            if isinstance(charge_collection, LibraryChargeCollection)
+            else charge_collection
+        )
+
         for i, (term_hash, term) in enumerate(
             track(
                 pool.imap(
                     functools.partial(
                         generate_objective_term,
-                        charge_collection=charge_collection,
+                        charge_collection=processed_charge_collection,
                         bcc_collection=bcc_collection,
                         bcc_parameter_keys=bcc_parameter_keys,
                         vsite_collection=vsite_collection,
