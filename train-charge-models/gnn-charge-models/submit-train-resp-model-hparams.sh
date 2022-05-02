@@ -56,4 +56,4 @@ python train-gnn-charge-model.py \
     --n-am1-hidden-features ${n_am1_hidden_features[${indices[4]}]} \
     --learning-rate         ${learning_rate[${indices[5]}]} \
     --n-epochs              175 \
-    --output-dir            "logs-h-params-resp"
+    --output-dir            "gnn-resp-h-params"

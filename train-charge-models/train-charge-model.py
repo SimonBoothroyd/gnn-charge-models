@@ -1,3 +1,4 @@
+"""Train a set of BCC + v-site parameters"""
 import copy
 import functools
 import hashlib
@@ -175,12 +176,13 @@ def library_charge_to_smiles(
     parameter: LibraryChargeParameter,
 ) -> Tuple[str, LibraryChargeParameter]:
 
-    return (
-        Molecule.from_smiles(parameter.smiles, allow_undefined_stereo=True).to_smiles(
-            mapped=False
-        ),
-        parameter,
-    )
+    with capture_toolkit_warnings():
+        return (
+            Molecule.from_smiles(
+                parameter.smiles, allow_undefined_stereo=True
+            ).to_smiles(mapped=False),
+            parameter,
+        )
 
 
 def library_charges_to_dict(

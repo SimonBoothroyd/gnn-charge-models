@@ -34,4 +34,5 @@ python train-gnn-charge-model.py --train-set             "../../data-set-labelli
                                  --n-am1-layers          4                                                            \
                                  --n-am1-hidden-features 128                                                          \
                                  --learning-rate         0.001                                                        \
-                                 --n-epochs              400
+                                 --n-epochs              400                                                          \
+                                 --output-dir            "gnn-am1"

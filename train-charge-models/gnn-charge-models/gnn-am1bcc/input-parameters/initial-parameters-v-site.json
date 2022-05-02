@@ -1,0 +1,5 @@
+{
+  "parameters": [],
+  "aromaticity_model": "MDL",
+  "exclusion_policy": "parents"
+}

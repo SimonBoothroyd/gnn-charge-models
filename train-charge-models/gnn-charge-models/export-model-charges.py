@@ -36,8 +36,6 @@ def to_library_parameter(
     error_console = rich.console.Console(stderr=True)
 
     try:
-        console = rich.get_console()
-        console.print(f"generating charges for {smiles}")
 
         with capture_toolkit_warnings():
 
@@ -68,6 +66,8 @@ def to_library_parameter(
             return LibraryChargeParameter(smiles=smiles, value=charges)
 
     except BaseException:
+
+        error_console.print(f"failed generating charges for {smiles}")
         error_console.print_exception()
         return None
 
