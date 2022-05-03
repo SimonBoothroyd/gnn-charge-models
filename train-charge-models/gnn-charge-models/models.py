@@ -149,11 +149,11 @@ class PartialChargeModelV1(DGLMoleculeLightningModel):
 
         atom_features = [
             atom_feature_name_to_feature[name](*args)
-            for name, args in self.atom_feature_args.items()
+            for name, args in self.atom_feature_args
         ]
         bond_features = [
             bond_feature_name_to_feature[name](*args)
-            for name, args in self.bond_feature_args.items()
+            for name, args in self.bond_feature_args
         ]
 
         return atom_features, bond_features
