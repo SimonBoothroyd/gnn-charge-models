@@ -32,9 +32,9 @@ from rich import pretty
 @click.option(
     "--output",
     "output_path",
-    type=click.Path(exists=False, file_okay=True, dir_okay=False, path_type=Path)
+    type=click.Path(exists=False, file_okay=True, dir_okay=False)
 )
-def main(input_systems_path, input_index, force_field_path, output_path: Path):
+def main(input_systems_path, input_index, force_field_path, output_path):
 
     console = rich.get_console()
     pretty.install(console)
@@ -77,6 +77,8 @@ def main(input_systems_path, input_index, force_field_path, output_path: Path):
 
         result = EquilibriumRunner.analyze()
 
+    output_path = Path(output_path)
+    console.print(f"saving results to {output_path}")
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
     with output_path.open("w") as file:
