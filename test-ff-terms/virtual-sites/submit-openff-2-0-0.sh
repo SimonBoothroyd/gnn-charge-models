@@ -1,7 +1,7 @@
 #!/bin/bash
 #
 # Set the job name and wall time limit
-#BSUB -J fsolv[1]
+#BSUB -J fsolv[1-150]%50
 #BSUB -W 05:59
 #
 # Set the output and error output paths.
@@ -12,7 +12,7 @@
 #BSUB -q gpuqueue
 #BSUB -gpu num=1:j_exclusive=yes:mode=shared:mps=no:
 #
-#BSUB -M 16
+#BSUB -M 5
 
 # Enable conda
 . ~/.bashrc
@@ -28,4 +28,3 @@ python ../run-calculation.py \
   --input-systems "test-set.json"          \
   --input-index   $(( $LSB_JOBINDEX - 1 )) \
   --output        "results/openff-2-0-0/$(( $LSB_JOBINDEX - 1 )).json"
-
