@@ -9,7 +9,7 @@ import rich
 from absolv.models import EquilibriumProtocol, State, System, TransferFreeEnergySchema
 from absolv.runners.equilibrium import EquilibriumRunner
 from openff.toolkit.typing.engines.smirnoff import ForceField
-from openff.units import unit
+from openmm import unit
 from openff.utilities import temporary_cd
 from rich import pretty
 
