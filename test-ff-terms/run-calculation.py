@@ -27,7 +27,7 @@ from rich import pretty
 @click.option(
     "--force-field",
     "force_field_path",
-    type=click.Path(exists=True, file_okay=True, dir_okay=False)
+    type=click.Path(exists=False, file_okay=True, dir_okay=False)
 )
 @click.option(
     "--output",
