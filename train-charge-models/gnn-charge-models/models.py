@@ -177,11 +177,11 @@ class PartialChargeModelV1(DGLMoleculeLightningModel):
         self.n_am1_layers = n_am1_layers
 
         atom_features = [
-            value if isinstance(value, tuple) else (value, ())
+            (value, ()) if isinstance(value, str) else value
             for value in atom_features
         ]
         bond_features = [
-            value if isinstance(value, tuple) else (value, ())
+            (value, ()) if isinstance(value, str) else value
             for value in bond_features
         ]
 
