@@ -46,4 +46,8 @@ python ../plot-test-rmse.py \
   --input "am1"    "outputs/test-per-molecule-rmse-am1.json" \
   --input "am1gnn" "outputs/test-per-molecule-rmse-gnn-am1.json" \
   --input "resp" "outputs/test-per-molecule-rmse-resp.json"
+  
+python ../plot-test-rmse.py \
+  --reference "am1bcc"     "outputs/test-per-molecule-rmse-am1bcc.json" \
+  --input "gnn-am1bcc"     "outputs/test-per-molecule-rmse-gnn-am1bcc.json"
 ```

@@ -25,6 +25,7 @@ module load cuda/11.0
 
 python train-gnn-charge-model.py --train-set             "../../data-set-labelling/am1-charges/chg-ChEMBL_eps_78.sqlite" \
                                  --train-set             "../../data-set-labelling/am1-charges/chg-ZINC_eps_78.sqlite"   \
+                                 --train-set             "../../data-set-labelling/am1-charges/esp-records-fragment-set.sqlite" \
                                  --train-batch-size      256                                                             \
                                  --val-set               "../../data-set-labelling/am1-charges/chg-enamine-10240.sqlite" \
                                  --test-set              "../../data-set-labelling/am1-charges/chg-OpenFF-Industry-Benchmark-Season-1-v1-1.sqlite" \
@@ -33,6 +34,7 @@ python train-gnn-charge-model.py --train-set             "../../data-set-labelli
                                  --n-gcn-hidden-features 128                                                          \
                                  --n-am1-layers          4                                                            \
                                  --n-am1-hidden-features 128                                                          \
+                                 --model-features        "gnn-am1-features-v2.json"                                   \
                                  --learning-rate         0.001                                                        \
                                  --n-epochs              400                                                          \
-                                 --output-dir            "gnn-am1"
+                                 --output-dir            "gnn-am1-v2"

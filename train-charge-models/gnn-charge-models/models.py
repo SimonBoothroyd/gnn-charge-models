@@ -1,4 +1,4 @@
-from typing import List, Literal, Tuple
+from typing import Any, List, Literal, Tuple
 
 import torch
 from nagl.features import (
@@ -17,12 +17,17 @@ from nagl.nn.pooling import PoolAtomFeatures
 from nagl.nn.postprocess import ComputePartialCharges
 from nagl.resonance import enumerate_resonance_forms
 from nagl.utilities.toolkits import normalize_molecule
+from openeye import oechem
 from openff.toolkit.topology import Molecule
 
 AtomFeatures = Literal[
-    "AtomicElement", "AtomConnectivity", "AtomAverageFormalCharge", "AtomIsInRing"
+    "AtomicElement",
+    "AtomConnectivity",
+    "AtomAverageFormalCharge",
+    "AtomIsInRing",
+    "AtomInRingOfSize",
 ]
-BondFeatures = Literal["BondIsInRing"]
+BondFeatures = Literal["BondIsInRing", "BondInRingOfSize"]
 
 
 class AtomAverageFormalCharge(AtomFeature):
@@ -74,28 +79,81 @@ class AtomAverageFormalCharge(AtomFeature):
         return 1
 
 
+class AtomInRingOfSize(AtomFeature):
+    def __init__(self, ring_size: int):
+
+        assert ring_size >= 3
+        self.ring_size = ring_size
+
+    def __call__(self, molecule: "Molecule") -> torch.Tensor:
+
+        oe_molecule: oechem.OEMol = molecule.to_openeye()
+        oechem.OEFindRingAtomsAndBonds(oe_molecule)
+
+        return torch.tensor(
+            [
+                int(oechem.OEAtomIsInRingSize(oe_atom, self.ring_size))
+                for oe_atom in oe_molecule.GetAtoms()
+            ]
+        ).reshape(-1, 1)
+
+    def __len__(self):
+        return 1
+
+
+class BondInRingOfSize(AtomFeature):
+    def __init__(self, ring_size: int):
+        assert ring_size >= 3
+        self.ring_size = ring_size
+
+    def __call__(self, molecule: "Molecule") -> torch.Tensor:
+        oe_molecule: oechem.OEMol = molecule.to_openeye()
+        oechem.OEFindRingAtomsAndBonds(oe_molecule)
+
+        oe_bonds_by_index = {
+            tuple(sorted((oe_bond.GetBgnIdx(), oe_bond.GetEndIdx()))): oe_bond
+            for oe_bond in oe_molecule.GetBonds()
+        }
+        oe_bonds = [
+            oe_bonds_by_index[tuple(sorted((bond.atom1_index, bond.atom2_index)))]
+            for bond in molecule.bonds
+        ]
+
+        return torch.tensor(
+            [
+                int(oechem.OEBondIsInRingSize(oe_bond, self.ring_size))
+                for oe_bond in oe_bonds
+            ]
+        ).reshape(-1, 1)
+
+    def __len__(self):
+        return 1
+
+
 class PartialChargeModelV1(DGLMoleculeLightningModel):
     def features(
         self,
     ) -> Tuple[List[AtomFeature], List[BondFeature]]:
 
         atom_feature_name_to_feature = {
-            "AtomicElement": AtomicElement(
-                ["C", "O", "H", "N", "S", "F", "Br", "Cl", "I", "P"]
-            ),
-            "AtomConnectivity": AtomConnectivity(),
-            "AtomAverageFormalCharge": AtomAverageFormalCharge(),
-            "AtomIsInRing": AtomIsInRing(),
+            "AtomicElement": AtomicElement,
+            "AtomConnectivity": AtomConnectivity,
+            "AtomAverageFormalCharge": AtomAverageFormalCharge,
+            "AtomIsInRing": AtomIsInRing,
+            "AtomInRingOfSize": AtomInRingOfSize,
         }
         bond_feature_name_to_feature = {
-            "BondIsInRing": BondIsInRing(),
+            "BondIsInRing": BondIsInRing,
+            "BondInRingOfSize": BondInRingOfSize,
         }
 
         atom_features = [
-            atom_feature_name_to_feature[name] for name in self.atom_feature_names
+            atom_feature_name_to_feature[name](*args)
+            for name, args in self.atom_feature_args.items()
         ]
         bond_features = [
-            bond_feature_name_to_feature[name] for name in self.bond_feature_names
+            bond_feature_name_to_feature[name](*args)
+            for name, args in self.bond_feature_args.items()
         ]
 
         return atom_features, bond_features
@@ -108,8 +166,8 @@ class PartialChargeModelV1(DGLMoleculeLightningModel):
         n_am1_layers: int,
         learning_rate: float,
         partial_charge_method: str,
-        atom_features: List[AtomFeatures],
-        bond_features: List[BondFeatures],
+        atom_features: List[Tuple[AtomFeatures, Tuple[Any, ...]]],
+        bond_features: List[Tuple[BondFeatures, Tuple[Any, ...]]],
     ):
 
         self.n_gcn_hidden_features = n_gcn_hidden_features
@@ -118,8 +176,21 @@ class PartialChargeModelV1(DGLMoleculeLightningModel):
         self.n_am1_hidden_features = n_am1_hidden_features
         self.n_am1_layers = n_am1_layers
 
-        self.atom_feature_names: List[AtomFeatures] = atom_features
-        self.bond_feature_names: List[BondFeatures] = bond_features
+        atom_features = [
+            value if isinstance(value, tuple) else (value, ())
+            for value in atom_features
+        ]
+        bond_features = [
+            value if isinstance(value, tuple) else (value, ())
+            for value in bond_features
+        ]
+
+        self.atom_feature_args: List[
+            Tuple[AtomFeatures, Tuple[Any, ...]]
+        ] = atom_features
+        self.bond_feature_args: List[
+            Tuple[BondFeatures, Tuple[Any, ...]]
+        ] = bond_features
 
         self.partial_charge_method = partial_charge_method
 

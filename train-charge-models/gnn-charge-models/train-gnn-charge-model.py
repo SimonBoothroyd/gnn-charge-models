@@ -98,6 +98,12 @@ def hash_file(file_path: Optional[str]) -> str:
     show_default=True,
     required=True,
 )
+@optgroup.option(
+    "--model-features",
+    "model_features_path",
+    type=click.Path(exists=True, file_okay=True, dir_okay=False),
+    required=True,
+)
 @optgroup.group("Optimizer")
 @optgroup.option(
     "--n-epochs",
@@ -138,6 +144,7 @@ def main(
     n_gcn_hidden_features,
     n_am1_layers,
     n_am1_hidden_features,
+    model_features_path,
     learning_rate,
     n_epochs,
     seed,
@@ -162,23 +169,16 @@ def main(
         pl.seed_everything(seed)
 
     # Define the model.
-    atom_feature_types = [
-        "AtomicElement",
-        "AtomConnectivity",
-        "AtomAverageFormalCharge",
-        "AtomIsInRing",
-    ]
-    bond_feature_types = [
-        "BondIsInRing",
-    ]
+    with open(model_features_path, "r") as file:
+        atom_feature_args, bond_feature_args = json.load(file)
 
     model = PartialChargeModelV1(
         n_gcn_hidden_features,
         n_gcn_layers,
         n_am1_hidden_features,
         n_am1_layers,
-        atom_features=atom_feature_types,
-        bond_features=bond_feature_types,
+        atom_features=atom_feature_args,
+        bond_features=bond_feature_args,
         learning_rate=learning_rate,
         partial_charge_method=partial_charge_method,
     )
@@ -192,18 +192,18 @@ def main(
         cache_hash = hashlib.sha256(
             json.dumps(
                 dict(
-                    atom_feature_types=atom_feature_types,
-                    bond_feature_types=bond_feature_types,
+                    atom_feature_types=atom_feature_args,
+                    bond_feature_types=bond_feature_args,
                     partial_charge_method=partial_charge_method,
-                    train_set_hash=hash_file(train_set_path),
+                    train_set_hash=[hash_file(path) for path in sorted(train_set_path)],
                     train_batch_size=train_batch_size,
-                    val_set_hash=hash_file(val_set_path),
+                    val_set_hash=[hash_file(path) for path in sorted(val_set_path)],
                     val_batch_size=None,
-                    test_set_hash=hash_file(test_set_path),
+                    test_set_hash=[hash_file(path) for path in sorted(test_set_path)],
                     test_batch_size=None,
                 ),
                 sort_keys=True,
-            )
+            ).encode()
         ).hexdigest()
 
     data_module = DGLMoleculeDataModule(

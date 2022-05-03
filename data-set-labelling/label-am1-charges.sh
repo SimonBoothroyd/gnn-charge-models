@@ -41,3 +41,16 @@ do
              --lsf-env "gnn-charge-models"
 
 done
+
+name="esp-records-fragment-set.smi"
+
+nagl label --input "qc-esp/${name}"   \
+           --output "am1-charges/${name%%.*}.sqlite"          \
+           --conf-rms 0.5                                     \
+           --n-workers 300                                    \
+           --batch-size 250                                   \
+           --worker-type lsf                                  \
+           --lsf-memory 4                                     \
+           --lsf-walltime "32:00"                             \
+           --lsf-queue "cpuqueue"                             \
+           --lsf-env "gnn-charge-models"
