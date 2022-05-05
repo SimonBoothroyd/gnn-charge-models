@@ -23,6 +23,6 @@ mkdir outputs
 
 python ../test-charge-model.py \
     --input-esp-records      "../test-esp-records.pkl"      \
-    --input-parameters-base  "gnn-am1-charges-base.json"   \
-    --output                 "outputs/test-per-molecule-rmse-gnn-am1.json"  \
+    --input-parameters-base  "gnn-am1-v2.json"   \
+    --output                 "outputs/test-per-molecule-rmse-gnn-am1-v2.json"  \
     --n-loader-processes     40

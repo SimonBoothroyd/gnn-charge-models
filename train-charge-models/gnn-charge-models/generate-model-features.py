@@ -1,9 +1,12 @@
 import json
+from pathlib import Path
 
 
-def save_features(atom_feature_args, bond_feature_args, output_path: str):
+def save_features(atom_feature_args, bond_feature_args, output_path: Path):
 
-    with open(output_path, "w") as file:
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+
+    with output_path.open("w") as file:
         json.dump((atom_feature_args, bond_feature_args), file)
 
 
@@ -44,8 +47,8 @@ def features_v2():
 
 def main():
 
-    save_features(*features_v1(), "gnn-am1-features-v1.json")
-    save_features(*features_v2(), "gnn-am1-features-v2.json")
+    save_features(*features_v1(), Path("gnn-am1-v1/gnn-features.json"))
+    save_features(*features_v2(), Path("gnn-am1-v2/gnn-features.json"))
 
 
 if __name__ == "__main__":

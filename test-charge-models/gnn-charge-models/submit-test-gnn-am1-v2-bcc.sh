@@ -23,7 +23,7 @@ mkdir outputs
 
 python ../test-charge-model.py \
     --input-esp-records      "../test-esp-records.pkl"      \
-    --input-parameters-base  "gnn-am1-charges-base.json" \
-    --input-parameters-bcc   "../../train-charge-models/gnn-charge-models/gnn-am1bcc/lr-0.0025-n-400/final-parameters-bcc.json"  \
-    --output                 "outputs/test-per-molecule-rmse-gnn-am1bcc.json"  \
+    --input-parameters-base  "gnn-am1-v2.json"   \
+    --input-parameters-bcc   "../../train-charge-models/gnn-charge-models/gnn-am1-v2-bcc/lr-0.0025-n-400/final-parameters-bcc.json"  \
+    --output                 "outputs/test-per-molecule-rmse-gnn-am1-v2-bcc.json"  \
     --n-loader-processes     40

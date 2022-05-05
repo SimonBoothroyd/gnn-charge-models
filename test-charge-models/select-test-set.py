@@ -61,7 +61,7 @@ def main():
         filtered_smiles = set.intersection(*smiles_per_charge_model)
 
         bcc_collection = BCCCollection.parse_file(
-            "../train-charge-models/gnn-charge-models/gnn-am1bcc/lr-0.0025-n-400/final-parameters-bcc.json"
+            "../train-charge-models/gnn-charge-models/gnn-am1-v2-bcc/lr-0.0025-n-400/final-parameters-bcc.json"
         )
 
         test_smiles = []

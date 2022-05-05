@@ -15,6 +15,11 @@ def main():
 
     for entry in freesolv.values():
 
+        if "P" in entry["smiles"]:
+            # OpenFF Recharge BCCs don't currently support P.
+            # See https://github.com/openforcefield/openff-recharge/issues/109
+            continue
+
         molecule: Molecule = Molecule.from_smiles(
             entry["smiles"], allow_undefined_stereo=True
         )

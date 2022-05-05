@@ -34,12 +34,19 @@ from rich import pretty
     "output_path",
     type=click.Path(exists=False, file_okay=True, dir_okay=False)
 )
-def main(input_systems_path, input_index, force_field_path, output_path):
+@click.option(
+    "--tmp-dir",
+    "working_directory",
+    type=click.Path(exists=False, file_okay=False, dir_okay=True)
+)
+def main(
+    input_systems_path, input_index, force_field_path, output_path, working_directory
+):
 
     console = rich.get_console()
     pretty.install(console)
 
-    force_field = ForceField(force_field_path)
+    force_field = ForceField(force_field_path, allow_cosmetic_attributes=True)
 
     with open(input_systems_path, "r") as file:
         input_systems: List[Tuple[str, str]] = json.load(file)
@@ -69,7 +76,10 @@ def main(input_systems_path, input_index, force_field_path, output_path):
         ),
     )
 
-    with temporary_cd():
+    if working_directory is not None:
+        Path(working_directory).mkdir(parents=True, exist_ok=True)
+
+    with temporary_cd(working_directory):
         console.print(f"running in {os.getcwd()}")
 
         EquilibriumRunner.setup(schema, force_field)
