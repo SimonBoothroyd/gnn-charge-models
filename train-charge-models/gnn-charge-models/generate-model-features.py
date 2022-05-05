@@ -18,7 +18,7 @@ def features_v1():
         ("AtomIsInRing", ()),
     ]
     bond_feature_args = [
-        ("BondIsInRing", ()),
+        # GraphSage does not make use of edge features
     ]
 
     return atom_feature_args, bond_feature_args
@@ -36,10 +36,7 @@ def features_v2():
         ("AtomInRingOfSize", (6,)),
     ]
     bond_feature_args = [
-        ("BondInRingOfSize", (3,)),
-        ("BondInRingOfSize", (4,)),
-        ("BondInRingOfSize", (5,)),
-        ("BondInRingOfSize", (6,)),
+        # GraphSage does not make use of edge features
     ]
 
     return atom_feature_args, bond_feature_args
