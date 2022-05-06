@@ -46,20 +46,20 @@ bsub < submit-test-resp.sh
 4. Plot the output
 
 ```shell
-python ../../test-charge-models/plot-test-rmse.py \
+python ../../../test-charge-models/plot-test-rmse.py \
     --input "resp"       "test-per-molecule-rmse-resp.json" \
     --input "am1bcc"     "test-per-molecule-rmse-am1bcc.json" \
     --input "no-v-sites" "no-v-sites/lr-0.0025-n-400/test-per-molecule-rmse.json" \
     --input "v-sites"    "v-sites/lr-0.0025-n-800-rad-1.0-str-500-pad-0.3/test-per-molecule-rmse.json"
 
-python ../../test-charge-models/plot-test-rmse.py \
+python ../../../test-charge-models/plot-test-rmse.py \
     --reference "ref"        "test-per-molecule-rmse-am1bcc.json" \
     --input     "no-v-sites" "no-v-sites/lr-0.0025-n-400/test-per-molecule-rmse.json" \
     --input     "v-sites"    "v-sites/lr-0.0025-n-800-rad-1.0-str-500-pad-0.3/test-per-molecule-rmse.json" \
     --output "refit-vs-orig-am1bcc.png"
 
-python ../../test-charge-models/plot-test-rmse.py \
+python ../../../test-charge-models/plot-test-rmse.py \
     --reference "ref"    "no-v-sites/lr-0.0025-n-400/test-per-molecule-rmse.json" \
     --input    "v-sites" "v-sites/lr-0.0025-n-800-rad-1.0-str-500-pad-0.3/test-per-molecule-rmse.json" \
-    --output "v-site-vs-no.png"    
+    --output "v-site-vs-no.png"
 ```
