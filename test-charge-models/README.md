@@ -41,13 +41,19 @@ bsub < submit-test-resp.sh
 
 ```shell
 python ../plot-test-rmse.py \
-  --input "am1bcc"     "outputs/test-per-molecule-rmse-am1bcc.json" \
-  --input "gnn-am1bcc" "outputs/test-per-molecule-rmse-gnn-am1bcc.json" \
-  --input "am1"    "outputs/test-per-molecule-rmse-am1.json" \
-  --input "am1gnn" "outputs/test-per-molecule-rmse-gnn-am1.json" \
-  --input "resp" "outputs/test-per-molecule-rmse-resp.json"
+  --input "am1bcc"          "outputs/test-per-molecule-rmse-am1bcc.json" \
+  --input "gnn-am1-v2-bcc"  "outputs/test-per-molecule-rmse-gnn-am1-v2-bcc.json" \
+  --input "am1"             "outputs/test-per-molecule-rmse-am1.json" \
+  --input "gnn-am1-v2"      "outputs/test-per-molecule-rmse-gnn-am1-v2.json" \
+  --input "resp"            "outputs/test-per-molecule-rmse-resp.json"
   
 python ../plot-test-rmse.py \
-  --reference "am1bcc"     "outputs/test-per-molecule-rmse-am1bcc.json" \
-  --input "gnn-am1bcc"     "outputs/test-per-molecule-rmse-gnn-am1bcc.json"
+  --reference "am1bcc"      "outputs/test-per-molecule-rmse-am1bcc.json" \
+  --input "gnn-am1-v2-bcc"  "outputs/test-per-molecule-rmse-gnn-am1-v2-bcc.json"
+```
+
+6. Extract the worst performing molecules for closer inspection
+
+```shell
+python summarise-results.py
 ```
