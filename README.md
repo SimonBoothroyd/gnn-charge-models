@@ -19,7 +19,10 @@ This repository is structured into four main directories:
 
 * `train-ff-terms` - contains the input files required to train the remaining force field terms using the new charge models.
 
-* `trained-models` - contains the trained models produced by this study. 
+* `test-charge-models` - contains the input files required to test the new charge models.
+
+* `test-ff-terms` - contains the input files required to test the fully refit (incl. vdW and valance terms) force field
+
 
 ### Reproduction
 
