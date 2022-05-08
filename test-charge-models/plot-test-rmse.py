@@ -1,10 +1,31 @@
+import functools
 import json
 
 import click
+import numpy
 import pandas
+import rich
 import seaborn
 from matplotlib import pyplot
+from nagl.utilities.toolkits import capture_toolkit_warnings
+from openff.toolkit.topology import Molecule
 from openff.units import unit
+from rich import pretty
+
+
+@functools.lru_cache
+def has_net_charge(smiles: str) -> bool:
+
+    from openmm import unit as openmm_unit
+
+    with capture_toolkit_warnings():
+        molecule: Molecule = Molecule.from_smiles(smiles, allow_undefined_stereo=True)
+
+        return not numpy.isclose(
+            molecule.total_charge.value_in_unit(openmm_unit.elementary_charge),
+            0.0,
+            atol=1.0e-3,
+        )
 
 
 @click.command()
@@ -32,7 +53,17 @@ from openff.units import unit
     default=True,
     show_default=True,
 )
-def main(input_tuples, reference_tuple, output_path, show_plot):
+@click.option(
+    "--neutral/--all",
+    "neutral_only",
+    type=bool,
+    default=False,
+    show_default=True,
+)
+def main(input_tuples, reference_tuple, output_path, show_plot, neutral_only):
+
+    console = rich.get_console()
+    pretty.install(console)
 
     plot_data_rows = []
     reference_data, reference_label = None, None
@@ -49,6 +80,8 @@ def main(input_tuples, reference_tuple, output_path, show_plot):
         else f"RMSE - RMSE$_{{{reference_label}}}$ (kcal / mol)"
     )
 
+    n_charged = 0
+
     for label, input_path in input_tuples:
 
         with open(input_path) as file:
@@ -61,6 +94,10 @@ def main(input_tuples, reference_tuple, output_path, show_plot):
 
         for smiles, rmse in per_molecule_rmse.items():
 
+            if neutral_only and has_net_charge(smiles):
+                n_charged += 1
+                continue
+
             conversion = (1.0 * unit.avogadro_constant * unit.hartree).m_as(
                 unit.kilocalorie / unit.mole
             )
@@ -72,6 +109,9 @@ def main(input_tuples, reference_tuple, output_path, show_plot):
                     "label": label,
                 }
             )
+
+    if neutral_only:
+        console.print(f"{n_charged} molecules had a net charge and were skipped")
 
     plot_data = pandas.DataFrame(plot_data_rows)
 

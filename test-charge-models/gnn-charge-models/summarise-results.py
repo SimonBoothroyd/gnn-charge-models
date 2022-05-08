@@ -92,15 +92,15 @@ def main():
 
     top_10_worst = ranked_molecules[:10]
 
+    os.makedirs("worst-molecules", exist_ok=True)
+
     rd_molecules = [Chem.MolFromSmiles(smiles) for smiles in top_10_worst]
     Draw.MolsToGridImage(
         rd_molecules,
         5,
         (300, 300),
         [f"{per_molecule_rmse[smiles] * conversion:.4f}" for smiles in top_10_worst],
-    ).save("worst-molecules.png")
-
-    os.makedirs("worst-molecules", exist_ok=True)
+    ).save("worst-molecules/per-molecule-rmse.png")
 
     for i, worst_smiles in enumerate(top_10_worst):
 

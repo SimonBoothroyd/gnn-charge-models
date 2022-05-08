@@ -56,5 +56,9 @@ dependencies:
   - rich
 
   - pip:
+      # Retry failed Evaluator calculations N times: https://github.com/leeping/forcebalance/pull/257
       - git+https://github.com/leeping/forcebalance.git@0c1ec0b
+      # Fix v-site labelling: https://github.com/openforcefield/openff-toolkit/pull/1290
       - git+https://github.com/openforcefield/openff-toolkit@4694c29a4fcf8db7187eb68f169a9a08a31542bf
+      # Compare GNN model with espaloma
+      - get+https://github.com/choderalab/espaloma.git@0.2.2

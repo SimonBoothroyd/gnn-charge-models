@@ -12,8 +12,8 @@ bsub < submit-generate-am1bcc-industry.sh
 ```shell
 python ../train-charge-models/gnn-charge-models/export-model-charges.py \
     --input-records    "../data-set-labelling/qc-esp/esp-records-industry-set.pkl" \
-    --input-checkpoint "../train-charge-models/gnn-charge-models/gnn-am1/default/256-3-128-4-128-0.001/checkpoints/epoch=235-step=141128.ckpt" \
-    --output           "gnn-charge-models/gnn-am1-charges-base.json" \
+    --input-checkpoint "../train-charge-models/gnn-charge-models/gnn-am1-v2/default/256-3-128-4-128-0.001/checkpoints/epoch=394-step=236210.ckpt" \
+    --output           "gnn-charge-models/gnn-am1-v2-base.json" \
     --n-processes 10
 ```
 
@@ -50,6 +50,13 @@ python ../plot-test-rmse.py \
 python ../plot-test-rmse.py \
   --reference "am1bcc"      "outputs/test-per-molecule-rmse-am1bcc.json" \
   --input "gnn-am1-v2-bcc"  "outputs/test-per-molecule-rmse-gnn-am1-v2-bcc.json"
+  
+# Espaloma seems to not yield the correct total charge on charged molecules
+python ../plot-test-rmse.py \
+  --reference "am1bcc"     "outputs/test-per-molecule-rmse-am1bcc.json" \
+  --input "espaloma"       "outputs/test-per-molecule-rmse-espaloma-0-2-2.json" \
+  --input "gnn-am1-v2-bcc" "outputs/test-per-molecule-rmse-gnn-am1-v2-bcc.json" \
+  --neutral
 ```
 
 6. Extract the worst performing molecules for closer inspection
